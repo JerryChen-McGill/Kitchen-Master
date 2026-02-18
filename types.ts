@@ -52,4 +52,5 @@ export interface GameState {
   popularity: number;
   timeLeft: number;
   gameStatus: 'idle' | 'playing' | 'ended';
+  isPaused: boolean;
 }
