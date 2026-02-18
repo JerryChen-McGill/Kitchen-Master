@@ -11,7 +11,7 @@ import { IngredientId, GameState, Recipe, Order, Stove, PendingDelivery, Custome
 const App: React.FC = () => {
   const [state, setState] = useState<GameState>({
     money: INITIAL_MONEY,
-    inventory: { tomato: 0, lettuce: 0, onion: 0, meat: 0, bread: 0, cheese: 0, potato: 0 },
+    inventory: { tomato: 2, lettuce: 2, onion: 2, meat: 2, bread: 2, cheese: 2, potato: 2 },
     stoves: Array(STOVE_COUNT).fill(null).map((_, i) => ({ id: i, isCooking: false, dishId: null, timeRemaining: 0, progress: 0 })),
     activeOrders: [],
     pendingDeliveries: [],
@@ -94,7 +94,7 @@ const App: React.FC = () => {
     bgmRef.current?.play().catch(() => {});
     setState({
       money: INITIAL_MONEY,
-      inventory: { tomato: 0, lettuce: 0, onion: 0, meat: 0, bread: 0, cheese: 0, potato: 0 },
+      inventory: { tomato: 2, lettuce: 2, onion: 2, meat: 2, bread: 2, cheese: 2, potato: 2 },
       stoves: Array(STOVE_COUNT).fill(null).map((_, i) => ({ id: i, isCooking: false, dishId: null, timeRemaining: 0, progress: 0 })),
       activeOrders: [createNewOrder(), createNewOrder(), createNewOrder()],
       pendingDeliveries: [],
@@ -225,7 +225,7 @@ const App: React.FC = () => {
         });
 
         const remainingOrders = currentOrders.map(o => ({ ...o, expiryTime: o.expiryTime - 1 })).filter(o => o.expiryTime > 0);
-        if (remainingOrders.length < 5 && Math.random() < 0.12) remainingOrders.push(createNewOrder());
+        if (remainingOrders.length < 3 && Math.random() < 0.12) remainingOrders.push(createNewOrder());
 
         return {
           ...prev, 
