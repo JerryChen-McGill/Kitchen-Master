@@ -234,7 +234,7 @@ const App: React.FC = () => {
         });
 
         const remainingOrders = currentOrders.map(o => ({ ...o, expiryTime: o.expiryTime - 1 })).filter(o => o.expiryTime > 0);
-        if (remainingOrders.length < 5 && Math.random() < 0.12) remainingOrders.push(createNewOrder());
+        if (remainingOrders.length < 4 && Math.random() < 0.12) remainingOrders.push(createNewOrder());
 
         return {
           ...prev, 
@@ -312,10 +312,19 @@ const App: React.FC = () => {
         }
         .animate-flash-red { animation: flash-red 0.5s ease-in-out 3; z-index: 10; }
         .supply-row { height: 110px; }
+        /* 进货：一屏显示 6 个，上滑看第 7 个 */
+        .supply-scroll { max-height: 660px; }
+        /* 菜单：电脑端不限制，自然显示 6 道菜；仅手机竖屏高度不够时限制 */
+        @media (max-height: 600px) and (orientation: portrait) {
+          .menu-scroll { max-height: 240px; }
+        }
 
         /* Mobile Landscape Optimization (19.5:9 aspect ratio) */
         @media (orientation: landscape) and (max-height: 500px) {
-          .supply-row { height: 70px !important; }
+          .supply-row { height: 55px !important; }
+          .supply-scroll { max-height: 330px !important; }
+          /* 横屏：不限制菜单高度，通过紧凑卡片让 6 道菜同屏显示 */
+          .mobile-landscape-compact .menu-scroll { gap: 0.3rem !important; padding: 0.35rem !important; }
           .mobile-landscape-compact .header-stat { padding: 0.25rem 0.75rem !important; }
           .mobile-landscape-compact .header-stat .stat-icon { width: 1.25rem !important; height: 1.25rem !important; }
           .mobile-landscape-compact .header-stat .stat-text { font-size: 1.25rem !important; }
@@ -330,18 +339,27 @@ const App: React.FC = () => {
           .mobile-landscape-compact .section-rounded { border-radius: 1rem !important; }
           .mobile-landscape-compact .section-header { padding: 0.375rem 0.75rem !important; font-size: 0.625rem !important; }
           .mobile-landscape-compact .section-header svg { width: 0.875rem !important; height: 0.875rem !important; }
-          .mobile-landscape-compact .ingredient-icon { font-size: 1.75rem !important; }
-          .mobile-landscape-compact .recipe-card { padding: 0.5rem !important; gap: 0.25rem !important; border-radius: 1rem !important; }
-          .mobile-landscape-compact .recipe-icon { font-size: 2rem !important; }
-          .mobile-landscape-compact .recipe-name { font-size: 0.5rem !important; }
-          .mobile-landscape-compact .stove-section { padding: 0.75rem !important; }
-          .mobile-landscape-compact .stove-title { font-size: 0.875rem !important; margin-bottom: 0.5rem !important; }
-          .mobile-landscape-compact .stove-title svg { width: 1.25rem !important; height: 1.25rem !important; }
-          .mobile-landscape-compact .stove-card { padding: 0.5rem !important; border-radius: 1rem !important; }
-          .mobile-landscape-compact .stove-icon { font-size: 2.5rem !important; margin-bottom: 0.5rem !important; }
-          .mobile-landscape-compact .stove-timer { width: 2rem !important; height: 2rem !important; font-size: 0.875rem !important; }
-          .mobile-landscape-compact .order-card { padding: 0.75rem !important; gap: 0.5rem !important; border-radius: 1rem !important; }
-          .mobile-landscape-compact .order-icon { font-size: 2.5rem !important; }
+          .mobile-landscape-compact .ingredient-icon { font-size: 1.5rem !important; }
+          .mobile-landscape-compact .recipe-card { padding: 0.3rem !important; gap: 0.15rem !important; border-radius: 0.5rem !important; }
+          .mobile-landscape-compact .recipe-icon { font-size: 1.35rem !important; }
+          .mobile-landscape-compact .recipe-name { font-size: 0.45rem !important; }
+          .mobile-landscape-compact .recipe-card .flex-wrap { gap: 0.25rem !important; }
+          .mobile-landscape-compact .recipe-card .flex-wrap span { font-size: 0.5rem !important; }
+          .mobile-landscape-compact .recipe-card .rounded-xl { padding: 0.2rem 0.4rem !important; font-size: 0.5rem !important; }
+          .mobile-landscape-compact .stove-section { padding: 0.5rem !important; }
+          .mobile-landscape-compact .stove-title { font-size: 0.75rem !important; margin-bottom: 0.25rem !important; }
+          .mobile-landscape-compact .stove-title svg { width: 1rem !important; height: 1rem !important; }
+          .mobile-landscape-compact .stove-section { padding: 0.35rem !important; }
+          .mobile-landscape-compact .stove-title { font-size: 0.65rem !important; margin-bottom: 0.15rem !important; }
+          .mobile-landscape-compact .stove-card { padding: 0.25rem !important; border-radius: 0.5rem !important; gap: 0.15rem !important; min-height: 0 !important; }
+          .mobile-landscape-compact .stove-icon { font-size: 1.25rem !important; margin-bottom: 0.15rem !important; }
+          .mobile-landscape-compact .stove-card .stove-timer { width: 1.25rem !important; height: 1.25rem !important; font-size: 0.5rem !important; }
+          .mobile-landscape-compact .order-list { min-height: 0 !important; max-height: 170px !important; }
+          .mobile-landscape-compact .order-card { padding: 0.35rem 0.5rem !important; gap: 0.2rem !important; border-radius: 0.75rem !important; margin-bottom: 0.35rem !important; min-height: 0 !important; }
+          .mobile-landscape-compact .order-icon { font-size: 1.5rem !important; }
+          .mobile-landscape-compact .order-name { font-size: 0.65rem !important; }
+          .mobile-landscape-compact .order-time { font-size: 0.5rem !important; }
+          .mobile-landscape-compact .order-progress { height: 0.25rem !important; }
           .mobile-landscape-compact .notification-popup { padding: 1rem 1.5rem !important; gap: 0.75rem !important; border-radius: 2rem !important; }
           .mobile-landscape-compact .notification-icon { width: 2.5rem !important; height: 2.5rem !important; }
           .mobile-landscape-compact .notification-text { font-size: 1.25rem !important; }
@@ -379,7 +397,7 @@ const App: React.FC = () => {
             <div className="flex items-center gap-3"><Package className="w-5 h-5 text-orange-400" /><h2 className="text-xs font-black uppercase tracking-widest">库存状态 (Max 10)</h2></div>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-3 space-y-px bg-stone-50/50">
+          <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-px bg-stone-50/50 supply-scroll">
             {(Object.keys(INGREDIENTS) as IngredientId[]).map(id => {
               const ing = INGREDIENTS[id];
               const pendingItems = state.pendingDeliveries.filter(d => d.ingredientId === id);
@@ -446,12 +464,12 @@ const App: React.FC = () => {
 
         {/* Cook & Kitchen Section */}
         <div className="col-span-5 flex flex-col gap-4 overflow-hidden">
-          <section className="h-[55%] bg-white rounded-[2.5rem] shadow-sm border-2 border-stone-200 overflow-hidden flex flex-col section-rounded">
+          <section className="h-[64%] bg-white rounded-[2.5rem] shadow-sm border-2 border-stone-200 overflow-hidden flex flex-col section-rounded">
             <div className="bg-orange-600 px-5 py-3 flex items-center gap-3 text-white shrink-0 section-header">
               <TrendingUp className="w-5 h-5 text-white" />
               <h2 className="text-xs font-black uppercase tracking-widest">店长菜单 (点击烹饪)</h2>
             </div>
-            <div className="p-4 grid grid-cols-3 gap-3 overflow-y-auto flex-1 bg-orange-50/10">
+            <div className="p-4 grid grid-cols-3 gap-3 overflow-y-auto flex-1 min-h-0 bg-orange-50/10 menu-scroll">
               {RECIPES.map(recipe => {
                 const canCook = Object.entries(recipe.ingredients).every(([ingId, count]) => state.inventory[ingId as IngredientId] >= (count || 0));
                 return (
@@ -479,7 +497,7 @@ const App: React.FC = () => {
             </div>
           </section>
 
-          <section className="h-[45%] bg-white rounded-[2.5rem] shadow-sm border-2 border-stone-200 p-6 flex flex-col overflow-hidden section-rounded stove-section">
+          <section className="h-[36%] bg-white rounded-[2.5rem] shadow-sm border-2 border-stone-200 p-6 flex flex-col overflow-hidden section-rounded stove-section">
             <div className="flex items-center gap-3 mb-4 shrink-0 font-black text-stone-800 uppercase tracking-tighter stove-title">
               <Flame className="w-8 h-8 text-orange-600 animate-pulse" /> <h2 className="text-2xl">操作灶台</h2>
             </div>
@@ -515,24 +533,24 @@ const App: React.FC = () => {
               <div className="flex items-center gap-3"><AlertCircle className="w-6 h-6" /><h2 className="text-lg font-black uppercase tracking-wider">实时订单</h2></div>
               <span className="bg-white text-red-600 text-sm px-3 py-1 rounded-full font-black shadow-inner">{state.activeOrders.length}</span>
             </div>
-            <div className="p-4 space-y-4 flex-1 overflow-y-auto bg-stone-100/30">
+            <div className="p-4 space-y-2 flex-1 min-h-0 overflow-y-auto bg-stone-100/30 order-list">
               {state.activeOrders.map(order => {
                 const recipe = RECIPES.find(r => r.id === order.dishId)!;
                 const isCritical = order.expiryTime < 15;
                 const progressWidth = (order.expiryTime / order.maxTime) * 100;
                 return (
-                  <div key={order.id} className={`flex flex-col p-5 rounded-[2.5rem] border-4 transition-all shadow-xl relative bg-white order-card ${isCritical ? 'border-red-500 animate-pulse scale-[0.98]' : 'border-white'}`}>
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="text-6xl drop-shadow-md shrink-0 order-icon">{recipe.icon}</div>
+                  <div key={order.id} className={`flex flex-col p-3 rounded-xl border-2 transition-all shadow-lg relative bg-white order-card ${isCritical ? 'border-red-500 animate-pulse scale-[0.98]' : 'border-white'}`}>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="text-4xl drop-shadow-md shrink-0 order-icon">{recipe.icon}</div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-black text-stone-800 text-xl leading-none mb-1 truncate order-name">{recipe.name}</div>
+                        <div className="font-black text-stone-800 text-sm leading-none mb-0.5 truncate order-name">{recipe.name}</div>
                         <div className="flex items-center justify-between">
-                           <div className={`flex items-center gap-1 font-black text-xs uppercase ${isCritical ? 'text-red-600' : 'text-stone-400'}`}><Clock className="w-4 h-4" /> {order.expiryTime}s</div>
-                           <div className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase ${order.type === 'blogger' ? 'bg-purple-100 text-purple-600 border border-purple-200' : order.type === 'grumpy' ? 'bg-red-100 text-red-600 border border-red-200' : order.type === 'happy' ? 'bg-yellow-100 text-yellow-600 border border-yellow-200' : 'bg-stone-100 text-stone-500'}`}>{order.type === 'blogger' ? '博主' : order.type === 'grumpy' ? '挑剔' : order.type === 'happy' ? '豪爽' : '普通'}</div>
+                           <div className={`flex items-center gap-0.5 font-black text-[10px] uppercase ${isCritical ? 'text-red-600' : 'text-stone-400'}`}><Clock className="w-3 h-3" /> {order.expiryTime}s</div>
+                           <div className={`text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase ${order.type === 'blogger' ? 'bg-purple-100 text-purple-600 border border-purple-200' : order.type === 'grumpy' ? 'bg-red-100 text-red-600 border border-red-200' : order.type === 'happy' ? 'bg-yellow-100 text-yellow-600 border border-yellow-200' : 'bg-stone-100 text-stone-500'}`}>{order.type === 'blogger' ? '博主' : order.type === 'grumpy' ? '挑剔' : order.type === 'happy' ? '豪爽' : '普通'}</div>
                         </div>
                       </div>
                     </div>
-                    <div className="w-full bg-stone-100 h-2.5 rounded-full overflow-hidden border border-stone-200/50 shadow-inner">
+                    <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden border border-stone-200/50 shadow-inner">
                       <div className={`h-full transition-all duration-1000 ease-linear ${isCritical ? 'bg-red-500' : 'bg-orange-400'}`} style={{ width: `${progressWidth}%` }} />
                     </div>
                   </div>
