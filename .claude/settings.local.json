@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh auth:*)",
+      "WebSearch",
+      "Bash(git --version:*)",
+      "WebFetch(domain:mixkit.co)",
+      "Bash(git config:*)",
+      "Bash(ssh:*)",
+      "Bash(curl:*)",
+      "Bash(grep -i content-length curl -sI \"https://assets.mixkit.co/active_storage/sfx/946/946-preview.mp3\")",
+      "Bash(grep -i content-length curl -sI \"https://assets.mixkit.co/active_storage/sfx/1028/1028-preview.mp3\")",
+      "Bash(grep -i content-length curl -sI \"https://assets.mixkit.co/active_storage/sfx/1066/1066-preview.mp3\")",
+      "Bash(npm run build:*)",
+      "Bash(python3:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd GitHub Pages deployment and fix audio/entry point\n\n- Add shorter fail sound effect \\(sfx/946\\)\n- Add base path for GitHub Pages\n- Add GitHub Actions auto-deploy workflow\n- Fix missing entry point script in index.html\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)"
+    ]
+  }
+}
