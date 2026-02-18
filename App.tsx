@@ -304,7 +304,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-stone-100 flex flex-col font-sans overflow-hidden">
+    <div className="h-screen bg-stone-100 flex flex-col font-sans overflow-hidden mobile-landscape-compact">
       <style>{`
         @keyframes flash-red {
           0%, 100% { border-color: #ef4444; background-color: #fee2e2; transform: scale(1.02); box-shadow: 0 0 15px rgba(239,68,68,0.5); }
@@ -312,35 +312,69 @@ const App: React.FC = () => {
         }
         .animate-flash-red { animation: flash-red 0.5s ease-in-out 3; z-index: 10; }
         .supply-row { height: 110px; }
+
+        /* Mobile Landscape Optimization (19.5:9 aspect ratio) */
+        @media (orientation: landscape) and (max-height: 500px) {
+          .supply-row { height: 70px !important; }
+          .mobile-landscape-compact .header-stat { padding: 0.25rem 0.75rem !important; }
+          .mobile-landscape-compact .header-stat .stat-icon { width: 1.25rem !important; height: 1.25rem !important; }
+          .mobile-landscape-compact .header-stat .stat-text { font-size: 1.25rem !important; }
+          .mobile-landscape-compact .header-timer { padding: 0.25rem 1rem !important; }
+          .mobile-landscape-compact .header-timer .timer-icon { width: 1.25rem !important; height: 1.25rem !important; }
+          .mobile-landscape-compact .header-timer .timer-text { font-size: 1.5rem !important; }
+          .mobile-landscape-compact .mute-btn { padding: 0.375rem !important; width: 2rem !important; height: 2rem !important; }
+          .mobile-landscape-compact .mute-btn svg { width: 1.25rem !important; height: 1.25rem !important; }
+          .mobile-landscape-compact header { padding: 0.5rem 1rem !important; }
+          .mobile-landscape-compact .header-gap { gap: 1rem !important; }
+          .mobile-landscape-compact main { padding: 0.5rem !important; gap: 0.5rem !important; }
+          .mobile-landscape-compact .section-rounded { border-radius: 1rem !important; }
+          .mobile-landscape-compact .section-header { padding: 0.375rem 0.75rem !important; font-size: 0.625rem !important; }
+          .mobile-landscape-compact .section-header svg { width: 0.875rem !important; height: 0.875rem !important; }
+          .mobile-landscape-compact .ingredient-icon { font-size: 1.75rem !important; }
+          .mobile-landscape-compact .recipe-card { padding: 0.5rem !important; gap: 0.25rem !important; border-radius: 1rem !important; }
+          .mobile-landscape-compact .recipe-icon { font-size: 2rem !important; }
+          .mobile-landscape-compact .recipe-name { font-size: 0.5rem !important; }
+          .mobile-landscape-compact .stove-section { padding: 0.75rem !important; }
+          .mobile-landscape-compact .stove-title { font-size: 0.875rem !important; margin-bottom: 0.5rem !important; }
+          .mobile-landscape-compact .stove-title svg { width: 1.25rem !important; height: 1.25rem !important; }
+          .mobile-landscape-compact .stove-card { padding: 0.5rem !important; border-radius: 1rem !important; }
+          .mobile-landscape-compact .stove-icon { font-size: 2.5rem !important; margin-bottom: 0.5rem !important; }
+          .mobile-landscape-compact .stove-timer { width: 2rem !important; height: 2rem !important; font-size: 0.875rem !important; }
+          .mobile-landscape-compact .order-card { padding: 0.75rem !important; gap: 0.5rem !important; border-radius: 1rem !important; }
+          .mobile-landscape-compact .order-icon { font-size: 2.5rem !important; }
+          .mobile-landscape-compact .notification-popup { padding: 1rem 1.5rem !important; gap: 0.75rem !important; border-radius: 2rem !important; }
+          .mobile-landscape-compact .notification-icon { width: 2.5rem !important; height: 2.5rem !important; }
+          .mobile-landscape-compact .notification-text { font-size: 1.25rem !important; }
+        }
       `}</style>
       
       <header className="bg-white border-b-4 border-stone-200 px-8 py-4 flex items-center justify-between shrink-0 shadow-lg z-50">
-        <div className="flex items-center gap-10">
-          <div className="flex items-center gap-3 bg-green-50 px-6 py-3 rounded-2xl border-2 border-green-200 shadow-sm">
-            <DollarSign className="w-8 h-8 text-green-600" />
-            <span className="text-4xl font-black text-green-700 tabular-nums">${state.money.toFixed(1)}</span>
+        <div className="flex items-center gap-10 header-gap">
+          <div className="flex items-center gap-3 bg-green-50 px-6 py-3 rounded-2xl border-2 border-green-200 shadow-sm header-stat">
+            <DollarSign className="w-8 h-8 text-green-600 stat-icon" />
+            <span className="text-4xl font-black text-green-700 tabular-nums stat-text">${state.money.toFixed(1)}</span>
           </div>
-          <div className="flex items-center gap-3 bg-red-50 px-6 py-3 rounded-2xl border-2 border-red-200 shadow-sm relative overflow-hidden">
-             <Heart className={`w-8 h-8 ${state.popularity < 30 ? 'text-red-600 animate-pulse' : 'text-red-500'}`} fill="currentColor" />
-             <span className="text-3xl font-black text-red-700">{state.popularity}%</span>
+          <div className="flex items-center gap-3 bg-red-50 px-6 py-3 rounded-2xl border-2 border-red-200 shadow-sm relative overflow-hidden header-stat">
+             <Heart className={`w-8 h-8 stat-icon ${state.popularity < 30 ? 'text-red-600 animate-pulse' : 'text-red-500'}`} fill="currentColor" />
+             <span className="text-3xl font-black text-red-700 stat-text">{state.popularity}%</span>
              <div className="absolute bottom-0 left-0 h-1 bg-red-400 transition-all duration-500 shadow-[0_0_8px_red]" style={{ width: `${state.popularity}%` }}></div>
           </div>
         </div>
-        <div className="flex items-center gap-6">
-          <button onClick={() => { setIsMuted(!isMuted); playSfx(sfxClick.current); }} className="p-3 rounded-2xl bg-stone-100 hover:bg-stone-200 transition-colors text-stone-600 border-2 border-transparent hover:border-stone-300">
+        <div className="flex items-center gap-6 header-gap">
+          <button onClick={() => { setIsMuted(!isMuted); playSfx(sfxClick.current); }} className="p-3 rounded-2xl bg-stone-100 hover:bg-stone-200 transition-colors text-stone-600 border-2 border-transparent hover:border-stone-300 mute-btn">
             {isMuted ? <VolumeX className="w-8 h-8" /> : <Volume2 className="w-8 h-8" />}
           </button>
-          <div className={`flex items-center gap-4 px-8 py-3 rounded-full border-4 shadow-xl transition-all duration-500 ${state.timeLeft < 30 ? 'bg-red-600 border-white text-white animate-pulse' : 'bg-stone-800 border-stone-700 text-white'}`}>
-            <Clock className="w-8 h-8" />
-            <span className="text-4xl font-black tabular-nums tracking-tighter">{formatTime(state.timeLeft)}</span>
+          <div className={`flex items-center gap-4 px-8 py-3 rounded-full border-4 shadow-xl transition-all duration-500 header-timer ${state.timeLeft < 30 ? 'bg-red-600 border-white text-white animate-pulse' : 'bg-stone-800 border-stone-700 text-white'}`}>
+            <Clock className="w-8 h-8 timer-icon" />
+            <span className="text-4xl font-black tabular-nums tracking-tighter timer-text">{formatTime(state.timeLeft)}</span>
           </div>
         </div>
       </header>
 
       <main className="flex-1 p-4 grid grid-cols-12 gap-4 overflow-hidden">
         {/* Unified Supply Section: Marketplace & Storage Combined */}
-        <section className="col-span-4 bg-white rounded-[2.5rem] shadow-sm border-2 border-stone-200 overflow-hidden flex flex-col">
-          <div className="bg-stone-800 px-6 py-4 flex items-center justify-between text-white shrink-0">
+        <section className="col-span-4 bg-white rounded-[2.5rem] shadow-sm border-2 border-stone-200 overflow-hidden flex flex-col section-rounded">
+          <div className="bg-stone-800 px-6 py-4 flex items-center justify-between text-white shrink-0 section-header">
             <div className="flex items-center gap-3"><ShoppingCart className="w-5 h-5 text-blue-400" /><h2 className="text-xs font-black uppercase tracking-widest">进货管理</h2></div>
             <div className="flex items-center gap-3"><Package className="w-5 h-5 text-orange-400" /><h2 className="text-xs font-black uppercase tracking-widest">库存状态 (Max 10)</h2></div>
           </div>
@@ -364,7 +398,7 @@ const App: React.FC = () => {
                         !isFull && !isLowMoney ? 'border-stone-100 hover:border-blue-400 hover:shadow-md hover:bg-blue-50/30' : 'border-stone-100 opacity-60 cursor-not-allowed'
                       }`}
                     >
-                      <span className="text-4xl drop-shadow-sm group-hover:scale-110 transition-transform">{ing.icon}</span>
+                      <span className="text-4xl drop-shadow-sm group-hover:scale-110 transition-transform ingredient-icon">{ing.icon}</span>
                       <div className="text-right">
                         <div className={`font-black text-xl ${isLowMoney ? 'text-stone-400' : 'text-blue-600'}`}>${ing.price}</div>
                         <div className="text-[10px] font-black text-stone-400 uppercase tracking-tight">{ing.name}</div>
@@ -398,7 +432,7 @@ const App: React.FC = () => {
                       {Array.from({ length: 10 }).map((_, i) => (
                         <div key={i} className={`flex items-center justify-center rounded-md border-2 ${i < state.inventory[id] ? 'bg-white border-stone-100 shadow-sm' : 'border-dashed border-stone-100/50'}`}>
                           {i < state.inventory[id] && (
-                             <span className="text-xl leading-none drop-shadow-sm animate-in zoom-in duration-300">{ing.icon}</span>
+                             <span className="text-xl leading-none drop-shadow-sm animate-in zoom-in duration-300 ingredient-icon">{ing.icon}</span>
                           )}
                         </div>
                       ))}
@@ -412,8 +446,8 @@ const App: React.FC = () => {
 
         {/* Cook & Kitchen Section */}
         <div className="col-span-5 flex flex-col gap-4 overflow-hidden">
-          <section className="h-[55%] bg-white rounded-[2.5rem] shadow-sm border-2 border-stone-200 overflow-hidden flex flex-col">
-            <div className="bg-orange-600 px-5 py-3 flex items-center gap-3 text-white shrink-0">
+          <section className="h-[55%] bg-white rounded-[2.5rem] shadow-sm border-2 border-stone-200 overflow-hidden flex flex-col section-rounded">
+            <div className="bg-orange-600 px-5 py-3 flex items-center gap-3 text-white shrink-0 section-header">
               <TrendingUp className="w-5 h-5 text-white" />
               <h2 className="text-xs font-black uppercase tracking-widest">店长菜单 (点击烹饪)</h2>
             </div>
@@ -421,14 +455,14 @@ const App: React.FC = () => {
               {RECIPES.map(recipe => {
                 const canCook = Object.entries(recipe.ingredients).every(([ingId, count]) => state.inventory[ingId as IngredientId] >= (count || 0));
                 return (
-                  <button 
-                    key={recipe.id} 
-                    onClick={() => startCooking(recipe)} 
-                    className={`flex flex-col gap-2 p-4 rounded-3xl border-4 transition-all text-center relative group active:scale-95 border-white shadow-lg bg-white ${canCook ? 'hover:border-orange-400' : 'hover:border-red-300 opacity-80'}`}
+                  <button
+                    key={recipe.id}
+                    onClick={() => startCooking(recipe)}
+                    className={`flex flex-col gap-2 p-4 rounded-3xl border-4 transition-all text-center relative group active:scale-95 border-white shadow-lg bg-white recipe-card ${canCook ? 'hover:border-orange-400' : 'hover:border-red-300 opacity-80'}`}
                   >
-                    <div className="text-5xl group-hover:scale-110 transition-transform mx-auto mb-1 drop-shadow-lg">{recipe.icon}</div>
+                    <div className="text-5xl group-hover:scale-110 transition-transform mx-auto mb-1 drop-shadow-lg recipe-icon">{recipe.icon}</div>
                     <div className="flex-1">
-                      <div className="font-black text-stone-800 text-[11px] uppercase truncate tracking-tight mb-1">{recipe.name}</div>
+                      <div className="font-black text-stone-800 text-[11px] uppercase truncate tracking-tight mb-1 recipe-name">{recipe.name}</div>
                       <div className="flex flex-wrap justify-center gap-1.5 mb-2">
                         {Object.entries(recipe.ingredients).map(([id, count]) => (
                           <div key={id} className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border ${state.inventory[id as IngredientId] < (count || 0) ? 'bg-red-50 border-red-200 text-red-500' : 'bg-stone-100 border-stone-200/50 text-stone-600'}`}>
@@ -445,20 +479,20 @@ const App: React.FC = () => {
             </div>
           </section>
 
-          <section className="h-[45%] bg-white rounded-[2.5rem] shadow-sm border-2 border-stone-200 p-6 flex flex-col overflow-hidden">
-            <div className="flex items-center gap-3 mb-4 shrink-0 font-black text-stone-800 uppercase tracking-tighter">
+          <section className="h-[45%] bg-white rounded-[2.5rem] shadow-sm border-2 border-stone-200 p-6 flex flex-col overflow-hidden section-rounded stove-section">
+            <div className="flex items-center gap-3 mb-4 shrink-0 font-black text-stone-800 uppercase tracking-tighter stove-title">
               <Flame className="w-8 h-8 text-orange-600 animate-pulse" /> <h2 className="text-2xl">操作灶台</h2>
             </div>
             <div className="flex-1 grid grid-cols-2 gap-6">
               {state.stoves.map(stove => {
                 const activeRecipe = RECIPES.find(r => r.id === stove.dishId);
                 return (
-                  <div key={stove.id} className="relative p-4 rounded-[2.5rem] border-4 border-dashed border-stone-200 bg-stone-50 flex flex-col items-center justify-center overflow-hidden group shadow-inner">
+                  <div key={stove.id} className="relative p-4 rounded-[2.5rem] border-4 border-dashed border-stone-200 bg-stone-50 flex flex-col items-center justify-center overflow-hidden group shadow-inner stove-card">
                     {stove.isCooking ? (
                       <div className="w-full flex flex-col items-center animate-in zoom-in duration-300 relative">
                         <button onClick={() => cancelCooking(stove.id)} className="absolute -top-3 -left-3 p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-600 hover:text-white transition-all z-10 shadow-lg border-2 border-white active:scale-90" title="撤销烹饪"><XCircle className="w-6 h-6" /></button>
-                        <div className="text-[80px] leading-none mb-4 relative drop-shadow-2xl">{activeRecipe?.icon}
-                          <div className="absolute -top-2 -right-2 bg-orange-600 text-white w-12 h-12 rounded-full border-4 border-white flex items-center justify-center font-black text-xl shadow-xl animate-bounce">{stove.timeRemaining}s</div>
+                        <div className="text-[80px] leading-none mb-4 relative drop-shadow-2xl stove-icon">{activeRecipe?.icon}
+                          <div className="absolute -top-2 -right-2 bg-orange-600 text-white w-12 h-12 rounded-full border-4 border-white flex items-center justify-center font-black text-xl shadow-xl animate-bounce stove-timer">{stove.timeRemaining}s</div>
                         </div>
                         <div className="w-full bg-stone-200 h-4 rounded-full overflow-hidden border-2 border-white shadow-inner max-w-[80%]">
                           <div className="bg-gradient-to-r from-orange-400 to-red-600 h-full transition-all duration-1000 ease-linear" style={{ width: `${stove.progress}%` }} />
@@ -476,8 +510,8 @@ const App: React.FC = () => {
 
         {/* Orders Section */}
         <div className="col-span-3 flex flex-col gap-4 overflow-hidden">
-          <section className="flex-1 bg-white rounded-[2.5rem] shadow-sm border-2 border-stone-200 overflow-hidden flex flex-col">
-            <div className="bg-red-500 px-5 py-4 flex items-center justify-between text-white shrink-0">
+          <section className="flex-1 bg-white rounded-[2.5rem] shadow-sm border-2 border-stone-200 overflow-hidden flex flex-col section-rounded">
+            <div className="bg-red-500 px-5 py-4 flex items-center justify-between text-white shrink-0 section-header">
               <div className="flex items-center gap-3"><AlertCircle className="w-6 h-6" /><h2 className="text-lg font-black uppercase tracking-wider">实时订单</h2></div>
               <span className="bg-white text-red-600 text-sm px-3 py-1 rounded-full font-black shadow-inner">{state.activeOrders.length}</span>
             </div>
@@ -487,11 +521,11 @@ const App: React.FC = () => {
                 const isCritical = order.expiryTime < 15;
                 const progressWidth = (order.expiryTime / order.maxTime) * 100;
                 return (
-                  <div key={order.id} className={`flex flex-col p-5 rounded-[2.5rem] border-4 transition-all shadow-xl relative bg-white ${isCritical ? 'border-red-500 animate-pulse scale-[0.98]' : 'border-white'}`}>
+                  <div key={order.id} className={`flex flex-col p-5 rounded-[2.5rem] border-4 transition-all shadow-xl relative bg-white order-card ${isCritical ? 'border-red-500 animate-pulse scale-[0.98]' : 'border-white'}`}>
                     <div className="flex items-center gap-4 mb-3">
-                      <div className="text-6xl drop-shadow-md shrink-0">{recipe.icon}</div>
+                      <div className="text-6xl drop-shadow-md shrink-0 order-icon">{recipe.icon}</div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-black text-stone-800 text-xl leading-none mb-1 truncate">{recipe.name}</div>
+                        <div className="font-black text-stone-800 text-xl leading-none mb-1 truncate order-name">{recipe.name}</div>
                         <div className="flex items-center justify-between">
                            <div className={`flex items-center gap-1 font-black text-xs uppercase ${isCritical ? 'text-red-600' : 'text-stone-400'}`}><Clock className="w-4 h-4" /> {order.expiryTime}s</div>
                            <div className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase ${order.type === 'blogger' ? 'bg-purple-100 text-purple-600 border border-purple-200' : order.type === 'grumpy' ? 'bg-red-100 text-red-600 border border-red-200' : order.type === 'happy' ? 'bg-yellow-100 text-yellow-600 border border-yellow-200' : 'bg-stone-100 text-stone-500'}`}>{order.type === 'blogger' ? '博主' : order.type === 'grumpy' ? '挑剔' : order.type === 'happy' ? '豪爽' : '普通'}</div>
@@ -512,9 +546,9 @@ const App: React.FC = () => {
 
       {/* Pop-up Notifications */}
       {notification && (
-        <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-12 py-10 rounded-[4rem] shadow-2xl flex flex-col items-center gap-6 animate-in zoom-in fade-in duration-300 z-[200] border-8 backdrop-blur-2xl ${notification.type === 'success' ? 'bg-green-600/90 border-green-300 text-white' : notification.type === 'error' ? 'bg-red-700/90 border-red-400 text-white' : 'bg-stone-900/90 border-stone-600 text-white'}`}>
-          {notification.type === 'success' ? <Star className="w-24 h-24 animate-spin duration-[3s]" /> : notification.type === 'error' ? <AlertCircle className="w-24 h-24 animate-pulse" /> : <TrendingUp className="w-24 h-24 text-blue-400" />}
-          <span className="font-black text-4xl text-center leading-tight tracking-tight drop-shadow-2xl">{notification.msg}</span>
+        <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-12 py-10 rounded-[4rem] shadow-2xl flex flex-col items-center gap-6 animate-in zoom-in fade-in duration-300 z-[200] border-8 backdrop-blur-2xl notification-popup ${notification.type === 'success' ? 'bg-green-600/90 border-green-300 text-white' : notification.type === 'error' ? 'bg-red-700/90 border-red-400 text-white' : 'bg-stone-900/90 border-stone-600 text-white'}`}>
+          {notification.type === 'success' ? <Star className="w-24 h-24 animate-spin duration-[3s] notification-icon" /> : notification.type === 'error' ? <AlertCircle className="w-24 h-24 animate-pulse notification-icon" /> : <TrendingUp className="w-24 h-24 text-blue-400 notification-icon" />}
+          <span className="font-black text-4xl text-center leading-tight tracking-tight drop-shadow-2xl notification-text">{notification.msg}</span>
         </div>
       )}
     </div>
