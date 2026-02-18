@@ -289,7 +289,7 @@ const App: React.FC = () => {
         }
         .animate-flash-red { animation: flash-red 0.5s ease-in-out 3; z-index: 10; }
         /* 极致压缩行高以适配 7 种食材一屏显示 */
-        .supply-row { height: 45px; }
+        .supply-row { height: 40px; }
         .recipe-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
       `}</style>
       
@@ -332,13 +332,13 @@ const App: React.FC = () => {
               return (
                 <div key={id} className="supply-row flex gap-1">
                   <div className="w-12 flex flex-col gap-0.5">
-                    <button onClick={() => buyIngredient(id)} disabled={isLowMoney || isFull} className={`relative w-full h-[26px] flex items-center justify-between px-1 rounded-md border transition-all bg-white shadow-sm ${!isFull && !isLowMoney ? 'border-stone-100 hover:border-blue-400' : 'border-stone-100 opacity-60 cursor-not-allowed'}`}>
+                    <button onClick={() => buyIngredient(id)} disabled={isLowMoney || isFull} className={`relative w-full h-[29px] flex items-center justify-between px-1 rounded-md border transition-all bg-white shadow-sm ${!isFull && !isLowMoney ? 'border-stone-100 hover:border-blue-400' : 'border-stone-100 opacity-60 cursor-not-allowed'}`}>
                       <span className="text-lg leading-none">{ing.icon}</span>
                       <span className={`font-black text-[7px] ${isLowMoney ? 'text-stone-300' : 'text-blue-600'}`}>${ing.price}</span>
                     </button>
                     <div className="h-0.5 flex gap-0.5 px-0.5">{pendingItems.map(d => (<div key={d.id} className="flex-1 h-full bg-stone-200 rounded-full overflow-hidden relative"><div className="absolute left-0 top-0 h-full bg-blue-500 transition-all duration-1000 ease-linear" style={{ width: `${((ing.deliveryTime - d.timeLeft) / ing.deliveryTime) * 100}%` }} /></div>))}</div>
                   </div>
-                  <div className={`flex-1 p-0.5 rounded-lg bg-white border transition-all shadow-sm flex items-center h-[26px] mt-0 ${flashingIngredients.includes(id) ? 'animate-flash-red border-red-500' : 'border-stone-100'}`}>
+                  <div className={`flex-1 p-0.5 rounded-lg bg-white border transition-all shadow-sm flex items-center h-[29px] mt-0 ${flashingIngredients.includes(id) ? 'animate-flash-red border-red-500' : 'border-stone-100'}`}>
                     <div className="flex-1 grid grid-cols-10 gap-0.5 p-0.5 bg-stone-50/50 rounded-md h-full">
                       {Array.from({ length: 10 }).map((_, i) => (<div key={i} className={`flex items-center justify-center rounded-sm border ${i < state.inventory[id] ? 'bg-white border-stone-50' : 'border-dashed border-stone-100/10'}`}>{i < state.inventory[id] && <span className="text-[10px] leading-none">{ing.icon}</span>}</div>))}
                     </div>
