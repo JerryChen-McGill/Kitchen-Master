@@ -366,7 +366,7 @@ const App: React.FC = () => {
       });
     }, 1000);
     return () => clearInterval(timerRef.current!);
-  }, [state.gameStatus]);
+  }, [state.gameStatus, state.isPaused]);
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
@@ -413,12 +413,15 @@ const App: React.FC = () => {
           50% { border-color: #ef4444; background-color: white; }
         }
         .animate-flash-red { animation: flash-red 0.5s ease-in-out 3; z-index: 10; }
-        /* 极致压缩行高以适配 7 种食材一屏显示 */
-        .supply-row { height: 40px; }
-        .recipe-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+        
+        /* 基础布局 - 手机横屏优先 */
+        .supply-row { height: 36px; }
+        .recipe-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+        
         /* 确保进货按钮和仓库容器高度一致 */
         .supply-row button { min-width: fit-content; }
         .supply-row .flex-1 { min-height: 100%; }
+        
         /* 暂停时按钮变灰 - 但不包括控制按钮（规则、静音、暂停） */
         .game-paused header button,
         .game-paused button[title="游戏规则"],
@@ -432,115 +435,185 @@ const App: React.FC = () => {
           cursor: not-allowed !important;
           pointer-events: none !important;
         }
-        
-        /* 桌面端适配：放大图标和UI元素，参考手机横屏比例 (2.5倍) */
+
+        /* ===== 手机横屏适配 (320px - 640px) ===== */
+        @media (max-width: 640px) {
+          /* Header - 紧凑布局 */
+          header { padding: 4px 8px !important; }
+          header .gap-4 { gap: 6px !important; }
+          header .gap-2 { gap: 4px !important; }
+          header .px-2 { padding-left: 4px !important; padding-right: 4px !important; }
+          header .py-0\\.5 { padding-top: 2px !important; padding-bottom: 2px !important; }
+          header .px-4 { padding-left: 8px !important; padding-right: 8px !important; }
+          header .py-1 { padding-top: 4px !important; padding-bottom: 4px !important; }
+          header .p-1\\.5 { padding: 4px !important; }
+          header svg.w-4, header svg.h-4 { width: 14px !important; height: 14px !important; }
+          header .rounded-lg { border-radius: 6px !important; }
+          header .rounded-full { border-radius: 9999px !important; }
+          header .text-xl { font-size: 14px !important; }
+          header .text-lg { font-size: 12px !important; }
+          
+          /* 进货区域 - 紧凑 */
+          .supply-row { height: 32px !important; }
+          .supply-row .w-16 { width: 52px !important; }
+          .supply-row button { height: 24px !important; padding: 2px 4px !important; }
+          .supply-row button > span:first-child { font-size: 14px !important; }
+          .supply-row .text-\\[7px\\] { font-size: 9px !important; }
+          .supply-row h2 { font-size: 8px !important; }
+          .supply-row svg.w-3, .supply-row svg.h-3 { width: 10px !important; height: 10px !important; }
+          .supply-row .h-\\[29px\\] { height: 24px !important; min-height: 24px !important; }
+          .supply-row .min-h-\\[29px\\] { min-height: 24px !important; }
+          .supply-row .grid-cols-10 { min-height: 22px !important; height: 22px !important; }
+          .supply-row .grid .text-\\[10px\\] { font-size: 8px !important; }
+          .supply-row .p-0\\.5 { padding: 2px !important; }
+          .supply-row .px-2 { padding-left: 4px !important; padding-right: 4px !important; }
+          .supply-row .py-1 { padding-top: 2px !important; padding-bottom: 2px !important; }
+          .supply-row .gap-1 { gap: 2px !important; }
+          .supply-row .gap-0\\.5 { gap: 1px !important; }
+          
+          /* 菜谱区域 - 紧凑 */
+          .recipe-grid { gap: 2px !important; padding: 4px !important; }
+          .recipe-grid button { padding: 4px !important; border-radius: 8px !important; }
+          .recipe-grid button > div > div:first-child { font-size: 20px !important; }
+          .recipe-grid .text-\\[10px\\] { font-size: 8px !important; }
+          .recipe-grid .text-\\[8px\\] { font-size: 7px !important; }
+          .recipe-grid .text-\\[9px\\] { font-size: 8px !important; }
+          .recipe-grid svg { width: 12px !important; height: 12px !important; }
+          .recipe-grid .mb-1 { margin-bottom: 2px !important; }
+          .recipe-grid .gap-1 { gap: 2px !important; }
+          .recipe-grid .py-0\\.5 { padding-top: 2px !important; padding-bottom: 2px !important; }
+          .recipe-grid h2 { font-size: 8px !important; }
+          
+          /* 操作间 - 紧凑 */
+          section[class*="h-\\[25%\\]"] { padding: 4px 8px !important; }
+          section[class*="h-\\[25%\\]"] svg { width: 12px !important; height: 12px !important; }
+          section[class*="h-\\[25%\\]"] .px-2 { padding-left: 4px !important; padding-right: 4px !important; }
+          section[class*="h-\\[25%\\]"] .py-1 { padding-top: 2px !important; padding-bottom: 2px !important; }
+          section[class*="h-\\[25%\\]"] .gap-1\\.5 { gap: 4px !important; }
+          section[class*="h-\\[25%\\]"] .mb-1 { margin-bottom: 4px !important; }
+          section[class*="h-\\[25%\\]"] .gap-2 { gap: 6px !important; }
+          section[class*="h-\\[25%\\]"] .text-2xl { font-size: 20px !important; }
+          section[class*="h-\\[25%\\]"] .text-\\[8px\\] { font-size: 7px !important; }
+          section[class*="h-\\[25%\\]"] .text-\\[7px\\] { font-size: 6px !important; }
+          section[class*="h-\\[25%\\]"] .rounded-sm { border-radius: 4px !important; }
+          section[class*="h-\\[25%\\]"] .rounded-lg { border-radius: 6px !important; }
+          section[class*="h-\\[25%\\]"] .h-1\\.5 { height: 4px !important; }
+          
+          /* 订单区域 - 紧凑 */
+          .col-span-3:last-child section { padding: 4px !important; }
+          .col-span-3 svg { width: 12px !important; height: 12px !important; }
+          .col-span-3 .space-y-1 > div { padding: 6px !important; margin-bottom: 4px !important; }
+          .col-span-3 .px-2 { padding-left: 4px !important; padding-right: 4px !important; }
+          .col-span-3 .py-1 { padding-top: 2px !important; padding-bottom: 2px !important; }
+          .col-span-3 .text-2xl { font-size: 20px !important; }
+          .col-span-3 .text-\\[9px\\] { font-size: 8px !important; }
+          .col-span-3 .text-\\[7px\\] { font-size: 6px !important; }
+          .col-span-3 .text-\\[8px\\] { font-size: 7px !important; }
+          .col-span-3 .gap-1\\.5 { gap: 4px !important; }
+          .col-span-3 .gap-1 { gap: 2px !important; }
+          .col-span-3 .mb-1 { margin-bottom: 4px !important; }
+          .col-span-3 .rounded-lg { border-radius: 6px !important; }
+          .col-span-3 .rounded-xl { border-radius: 8px !important; }
+          .col-span-3 .px-1\\.5 { padding-left: 4px !important; padding-right: 4px !important; }
+          .col-span-3 .p-1 { padding: 4px !important; }
+          .col-span-3 .h-1 { height: 3px !important; }
+          
+          /* 全局 */
+          main { padding: 4px !important; gap: 4px !important; }
+          .text-xl { font-size: 14px !important; }
+          .text-lg { font-size: 12px !important; }
+          .text-2xl { font-size: 20px !important; }
+          .text-3xl { font-size: 28px !important; }
+        }
+
+        /* ===== 中等屏幕适配 (640px - 1024px) ===== */
+        @media (min-width: 641px) and (max-width: 1023px) {
+          /* 进货区域 */
+          .supply-row { height: 38px !important; }
+          .supply-row .w-16 { width: 56px !important; }
+          .supply-row button { height: 26px !important; padding: 3px 6px !important; }
+          .supply-row button > span:first-child { font-size: 16px !important; }
+          .supply-row .h-\\[29px\\] { height: 26px !important; min-height: 26px !important; }
+          .supply-row .min-h-\\[29px\\] { min-height: 26px !important; }
+          .supply-row .grid-cols-10 { min-height: 24px !important; height: 24px !important; }
+          
+          /* 菜谱区域 */
+          .recipe-grid button > div > div:first-child { font-size: 28px !important; }
+          
+          /* 操作间 */
+          section[class*="h-\\[25%\\]"] .text-2xl { font-size: 24px !important; }
+          
+          /* 订单区域 */
+          .col-span-3 .text-2xl { font-size: 24px !important; }
+        }
+
+        /* ===== 桌面端适配 (1024px以上) ===== */
         @media (min-width: 1024px) {
           /* 全局间距和内边距放大 */
-          .desktop-scale .p-1 { padding: 0.75rem !important; }
-          .desktop-scale .gap-1 { gap: 0.75rem !important; }
-          .desktop-scale main { padding: 0.75rem !important; }
-          .desktop-scale main .gap-1 { gap: 0.75rem !important; }
+          .desktop-scale .p-1 { padding: 8px !important; }
+          .desktop-scale .gap-1 { gap: 8px !important; }
+          .desktop-scale main { padding: 8px !important; }
+          .desktop-scale main .gap-1 { gap: 8px !important; }
           
-          /* Header 区域放大 */
-          .desktop-scale header { padding: 1.5rem 3rem !important; border-width: 0.25rem !important; }
-          .desktop-scale header svg { width: 1.5rem !important; height: 1.5rem !important; }
-          .desktop-scale header .gap-4 { gap: 1.5rem !important; }
-          .desktop-scale header .gap-2 { gap: 1rem !important; }
-          .desktop-scale header .gap-1\\.5 { gap: 1rem !important; }
-          .desktop-scale header .px-2 { padding-left: 1rem !important; padding-right: 1rem !important; }
-          .desktop-scale header .py-0\\.5 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
-          .desktop-scale header .px-4 { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
-          .desktop-scale header .py-1 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
-          .desktop-scale header .p-1\\.5 { padding: 0.75rem !important; }
-          .desktop-scale header .rounded-lg { border-radius: 0.75rem !important; }
+          /* Header 区域 */
+          .desktop-scale header { padding: 12px 24px !important; }
+          .desktop-scale header svg { width: 24px !important; height: 24px !important; }
+          .desktop-scale header .gap-4 { gap: 16px !important; }
+          .desktop-scale header .gap-2 { gap: 12px !important; }
+          .desktop-scale header .rounded-lg { border-radius: 12px !important; }
           .desktop-scale header .rounded-full { border-radius: 9999px !important; }
           
-          /* 进货区域放大 */
+          /* 进货区域 */
           .desktop-scale .col-span-3 { padding: 0 !important; }
-          .desktop-scale .supply-row { height: 100px !important; }
-          .desktop-scale .supply-row button { height: 72px !important; padding: 0.75rem 1rem !important; }
-          .desktop-scale .supply-row .w-16 { width: 5rem !important; }
-          .desktop-scale .supply-row .w-12 { width: 4rem !important; }
-          .desktop-scale .supply-row .gap-1 { gap: 0.5rem !important; }
-          .desktop-scale .supply-row .gap-0\\.5 { gap: 0.25rem !important; }
-          .desktop-scale .supply-row h2 { font-size: 0.875rem !important; }
-          .desktop-scale .supply-row svg { width: 1rem !important; height: 1rem !important; }
-          .desktop-scale .supply-row .p-0\\.5 { padding: 0.5rem !important; }
-          .desktop-scale .supply-row .px-2 { padding-left: 1rem !important; padding-right: 1rem !important; }
-          .desktop-scale .supply-row .py-1 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
-          .desktop-scale .supply-row .px-1 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
-          .desktop-scale .supply-row .px-1\\.5 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
-          .desktop-scale .supply-row .rounded-lg { border-radius: 0.75rem !important; }
-          .desktop-scale .supply-row .rounded-md { border-radius: 0.5rem !important; }
-          .desktop-scale .supply-row .rounded-xl { border-radius: 1rem !important; }
-          .desktop-scale .supply-row .space-y-px > * + * { margin-top: 0.125rem !important; }
-          /* 确保仓库容器高度与进货按钮一致 */
-          .desktop-scale .supply-row .h-\\[29px\\] { height: 72px !important; min-height: 72px !important; }
-          .desktop-scale .supply-row .min-h-\\[29px\\] { min-height: 72px !important; }
-          .desktop-scale .supply-row .grid-cols-10 { min-height: 100% !important; height: 100% !important; }
-          .desktop-scale .supply-row .aspect-square { aspect-ratio: 1 / 1 !important; }
-          /* 确保仓库格子有足够空间显示内容 */
-          .desktop-scale .supply-row .grid > div { min-height: 0 !important; overflow: visible !important; }
-          .desktop-scale .supply-row .grid .text-\\[10px\\] { font-size: 1rem !important; }
+          .desktop-scale .supply-row { height: 60px !important; }
+          .desktop-scale .supply-row button { height: 48px !important; padding: 8px 12px !important; }
+          .desktop-scale .supply-row .w-16 { width: 72px !important; }
+          .desktop-scale .supply-row button > span:first-child { font-size: 28px !important; line-height: 1 !important; }
+          .desktop-scale .supply-row .text-\\[10px\\] { font-size: 16px !important; }
+          .desktop-scale .supply-row .text-\\[7px\\] { font-size: 12px !important; }
+          .desktop-scale .supply-row .text-\\[9px\\] { font-size: 14px !important; }
+          .desktop-scale .supply-row h2 { font-size: 12px !important; }
+          .desktop-scale .supply-row svg { width: 16px !important; height: 16px !important; }
+          .desktop-scale .supply-row .h-\\[29px\\] { height: 48px !important; min-height: 48px !important; }
+          .desktop-scale .supply-row .min-h-\\[29px\\] { min-height: 48px !important; }
+          .desktop-scale .supply-row .grid-cols-10 { min-height: 44px !important; height: 44px !important; }
+          .desktop-scale .supply-row .grid .text-\\[10px\\] { font-size: 14px !important; }
           
-          /* 菜谱区域放大 */
-          .desktop-scale .recipe-grid { gap: 1rem !important; padding: 1.5rem !important; }
-          .desktop-scale .recipe-grid button { padding: 1.5rem !important; border-radius: 1.5rem !important; border-width: 0.25rem !important; }
-          .desktop-scale .recipe-grid h2 { font-size: 1rem !important; }
-          .desktop-scale .recipe-grid svg { width: 1.5rem !important; height: 1.5rem !important; }
-          .desktop-scale .recipe-grid .px-3 { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
-          .desktop-scale .recipe-grid .py-1 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
-          .desktop-scale .recipe-grid .gap-2 { gap: 1rem !important; }
-          .desktop-scale .recipe-grid .mb-1 { margin-bottom: 0.75rem !important; }
-          .desktop-scale .recipe-grid .mb-0\\.5 { margin-bottom: 0.5rem !important; }
-          .desktop-scale .recipe-grid .gap-1 { gap: 0.5rem !important; }
-          .desktop-scale .recipe-grid .gap-0\\.5 { gap: 0.375rem !important; }
-          .desktop-scale .recipe-grid .py-0\\.5 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
-          .desktop-scale .recipe-grid .p-1\\.5 { padding: 1rem !important; }
-          .desktop-scale .recipe-grid .rounded-xl { border-radius: 1.5rem !important; }
+          /* 菜谱区域 */
+          .desktop-scale .recipe-grid { gap: 8px !important; padding: 12px !important; }
+          .desktop-scale .recipe-grid button { padding: 12px !important; border-radius: 16px !important; }
+          .desktop-scale .recipe-grid button > div > div:first-child { font-size: 48px !important; line-height: 1 !important; }
+          .desktop-scale .recipe-grid .text-\\[10px\\] { font-size: 16px !important; }
+          .desktop-scale .recipe-grid .text-\\[8px\\] { font-size: 12px !important; }
+          .desktop-scale .recipe-grid .text-\\[9px\\] { font-size: 14px !important; }
+          .desktop-scale .recipe-grid svg { width: 20px !important; height: 20px !important; }
+          .desktop-scale .recipe-grid h2 { font-size: 14px !important; }
           
-          /* 操作间放大 */
-          .desktop-scale section[class*="h-[25%]"] { padding: 1.5rem 2rem !important; }
-          .desktop-scale section[class*="h-[25%]"] svg { width: 1rem !important; height: 1rem !important; }
-          .desktop-scale section[class*="h-[25%]"] .px-2 { padding-left: 1rem !important; padding-right: 1rem !important; }
-          .desktop-scale section[class*="h-[25%]"] .py-1 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
-          .desktop-scale section[class*="h-[25%]"] .gap-1\\.5 { gap: 1rem !important; }
-          .desktop-scale section[class*="h-[25%]"] .mb-1 { margin-bottom: 0.75rem !important; }
-          .desktop-scale section[class*="h-[25%]"] .gap-2 { gap: 1.5rem !important; }
-          .desktop-scale section[class*="h-[25%]"] .gap-0\\.5 { gap: 0.5rem !important; }
-          .desktop-scale section[class*="h-[25%]"] .px-1 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
-          .desktop-scale section[class*="h-[25%]"] .p-0\\.5 { padding: 0.5rem !important; }
-          .desktop-scale section[class*="h-[25%]"] .rounded-sm { border-radius: 0.375rem !important; }
-          .desktop-scale section[class*="h-[25%]"] .rounded-lg { border-radius: 0.75rem !important; }
-          .desktop-scale section[class*="h-[25%]"] .h-1\\.5 { height: 0.5rem !important; }
-          .desktop-scale section[class*="h-[25%]"] .rounded-full { border-radius: 9999px !important; }
+          /* 操作间 */
+          .desktop-scale section[class*="h-\\[25%\\]"] { padding: 16px 24px !important; }
+          .desktop-scale section[class*="h-\\[25%\\]"] svg { width: 16px !important; height: 16px !important; }
+          .desktop-scale section[class*="h-\\[25%\\]"] .text-2xl { font-size: 36px !important; }
+          .desktop-scale section[class*="h-\\[25%\\]"] .text-\\[8px\\] { font-size: 12px !important; }
+          .desktop-scale section[class*="h-\\[25%\\]"] .text-\\[7px\\] { font-size: 10px !important; }
           
-          /* 订单区域放大 */
-          .desktop-scale .col-span-3:last-child section { padding: 1rem !important; }
-          .desktop-scale .col-span-3 svg { width: 1rem !important; height: 1rem !important; }
-          .desktop-scale .col-span-3 .space-y-1 > div { padding: 1.5rem !important; margin-bottom: 1rem !important; }
-          .desktop-scale .col-span-3 .px-2 { padding-left: 1rem !important; padding-right: 1rem !important; }
-          .desktop-scale .col-span-3 .py-1 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
-          .desktop-scale .col-span-3 .gap-1\\.5 { gap: 1rem !important; }
-          .desktop-scale .col-span-3 .gap-1 { gap: 0.75rem !important; }
-          .desktop-scale .col-span-3 .mb-1 { margin-bottom: 0.75rem !important; }
-          .desktop-scale .col-span-3 .rounded-lg { border-radius: 1rem !important; }
-          .desktop-scale .col-span-3 .rounded-xl { border-radius: 1.5rem !important; }
-          .desktop-scale .col-span-3 .px-1\\.5 { padding-left: 1rem !important; padding-right: 1rem !important; }
-          .desktop-scale .col-span-3 .p-1 { padding: 0.75rem !important; }
-          .desktop-scale .col-span-3 .h-1 { height: 0.375rem !important; }
-          .desktop-scale .col-span-3 .rounded-full { border-radius: 9999px !important; }
+          /* 订单区域 */
+          .desktop-scale .col-span-3:last-child section { padding: 12px !important; }
+          .desktop-scale .col-span-3 svg { width: 16px !important; height: 16px !important; }
+          .desktop-scale .col-span-3 .text-2xl { font-size: 36px !important; }
+          .desktop-scale .col-span-3 .text-\\[9px\\] { font-size: 14px !important; }
+          .desktop-scale .col-span-3 .text-\\[7px\\] { font-size: 12px !important; }
+          .desktop-scale .col-span-3 .text-\\[8px\\] { font-size: 12px !important; }
           
-          /* 文字和图标尺寸放大 - 统一处理所有小尺寸文字 */
-          .desktop-scale .text-xl { font-size: 2rem !important; }
-          .desktop-scale .text-lg { font-size: 1.75rem !important; }
-          .desktop-scale .text-2xl { font-size: 3rem !important; }
-          .desktop-scale .text-3xl { font-size: 4.5rem !important; }
+          /* 文字和图标尺寸放大 */
+          .desktop-scale .text-xl { font-size: 28px !important; }
+          .desktop-scale .text-lg { font-size: 24px !important; }
+          .desktop-scale .text-2xl { font-size: 36px !important; }
+          .desktop-scale .text-3xl { font-size: 56px !important; }
           
-          /* 圆角统一放大 */
-          .desktop-scale .rounded-xl { border-radius: 1.5rem !important; }
-          .desktop-scale .rounded-lg { border-radius: 1rem !important; }
-          .desktop-scale .rounded-md { border-radius: 0.5rem !important; }
+          /* 圆角放大 */
+          .desktop-scale .rounded-xl { border-radius: 20px !important; }
+          .desktop-scale .rounded-lg { border-radius: 12px !important; }
+          .desktop-scale .rounded-md { border-radius: 8px !important; }
         }
       `}</style>
       
