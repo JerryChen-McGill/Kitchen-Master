@@ -46,8 +46,7 @@ const App: React.FC = () => {
     sfxSuccess.current = new Audio('https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3');
     sfxSuccess.current.volume = 0.6;
     
-    // 更换为更低沉、有惩罚感的低音音效
-    sfxFail.current = new Audio('https://assets.mixkit.co/active_storage/sfx/1066/1066-preview.mp3');
+    sfxFail.current = new Audio('https://assets.mixkit.co/active_storage/sfx/946/946-preview.mp3');
     sfxFail.current.volume = 0.8;
 
     return () => {
