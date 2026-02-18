@@ -289,7 +289,7 @@ const App: React.FC = () => {
         }
         .animate-flash-red { animation: flash-red 0.5s ease-in-out 3; z-index: 10; }
         /* 极致压缩行高以适配 7 种食材一屏显示 */
-        .supply-row { height: 40px; }
+        .supply-row { height: 45px; }
         .recipe-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
       `}</style>
       
