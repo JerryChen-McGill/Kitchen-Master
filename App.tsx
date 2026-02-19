@@ -650,8 +650,8 @@ const App: React.FC = () => {
         {/* Supply Chain Section (Left) - Non-scrollable optimization */}
         <section className="col-span-3 bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden flex flex-col">
           <div className="bg-stone-700 px-2 py-1 flex items-center justify-between text-white shrink-0">
-            <div className="flex items-center gap-1"><ShoppingCart className="w-3 h-3 text-blue-300" /><h2 className="text-[10px] font-black uppercase tracking-wider truncate">进货</h2></div>
-            <div className="flex items-center gap-1"><Package className="w-3 h-3 text-orange-300" /><h2 className="text-[10px] font-black uppercase tracking-wider truncate">仓库</h2></div>
+            <div className="flex items-center gap-1"><ShoppingCart className="w-3 h-3 text-blue-300" /><h2 className="text-[13px] font-black uppercase tracking-wider truncate">进货</h2></div>
+            <div className="flex items-center gap-1"><Package className="w-3 h-3 text-orange-300" /><h2 className="text-[13px] font-black uppercase tracking-wider truncate">仓库</h2></div>
           </div>
           <div className="flex-1 p-0.5 space-y-px bg-stone-50/30 overflow-hidden">
             {(Object.keys(INGREDIENTS) as IngredientId[]).sort((a, b) => INGREDIENTS[a].price - INGREDIENTS[b].price).map(id => {
