@@ -647,8 +647,8 @@ const App: React.FC = () => {
         {/* Supply Chain Section (Left) - Non-scrollable optimization */}
         <section className="col-span-3 bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden flex flex-col">
           <div className="bg-stone-700 px-2 py-1 flex items-center justify-between text-white shrink-0">
-            <div className="flex items-center gap-1"><ShoppingCart className="w-3 h-3 text-blue-300" /><h2 className="text-[9px] font-black uppercase tracking-wider truncate">进货</h2></div>
-            <div className="flex items-center gap-1"><Package className="w-3 h-3 text-orange-300" /><h2 className="text-[9px] font-black uppercase tracking-wider truncate">仓库</h2></div>
+            <div className="flex items-center gap-1"><ShoppingCart className="w-3 h-3 text-blue-300" /><h2 className="text-[10px] font-black uppercase tracking-wider truncate">进货</h2></div>
+            <div className="flex items-center gap-1"><Package className="w-3 h-3 text-orange-300" /><h2 className="text-[10px] font-black uppercase tracking-wider truncate">仓库</h2></div>
           </div>
           <div className="flex-1 p-0.5 space-y-px bg-stone-50/30 overflow-hidden">
             {(Object.keys(INGREDIENTS) as IngredientId[]).sort((a, b) => INGREDIENTS[a].price - INGREDIENTS[b].price).map(id => {
@@ -682,8 +682,7 @@ const App: React.FC = () => {
           {/* Menu Section */}
           <section className="h-[75%] bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden flex flex-col">
             <div className="bg-stone-700 px-2 py-1 flex items-center justify-between text-white shrink-0">
-              <div className="flex items-center gap-1"><TrendingUp className="w-3 h-3 text-orange-300" /><h2 className="text-[9px] font-black uppercase tracking-wider truncate">菜谱</h2></div>
-              <div className="flex items-center gap-1"><TrendingUp className="w-3 h-3 text-orange-300" /><h2 className="text-[9px] font-black uppercase tracking-wider truncate">选择</h2></div>
+              <div className="flex items-center gap-1"><TrendingUp className="w-3 h-3 text-orange-300" /><h2 className="text-[10px] font-black uppercase tracking-wider truncate">菜谱</h2></div>
             </div>
             <div className="p-1 recipe-grid overflow-y-auto flex-1 bg-stone-100/10">
               {[...RECIPES].sort((a, b) => a.salePrice - b.salePrice).map(recipe => {
@@ -716,9 +715,10 @@ const App: React.FC = () => {
           </section>
 
           {/* Cooking Section */}
-          <section className="h-[25%] bg-white rounded-xl shadow-sm border border-stone-200 px-2 py-1 flex flex-col overflow-hidden">
-            <div className="flex items-center gap-1 shrink-0 font-black text-stone-400 uppercase tracking-wider text-[9px]">
-              <Flame className="w-3 h-3 text-orange-500" /> 灶台
+          <section className="h-[25%] flex flex-col overflow-hidden px-2 -mt-0.5">
+            <div className="flex items-center gap-1">
+              <Flame className="w-3 h-3 text-orange-500" />
+              <span className="text-[10px] font-black uppercase tracking-wider text-stone-400">灶台</span>
             </div>
             <div className="flex-1 flex gap-2">
               {state.stoves.map(stove => {
@@ -752,7 +752,7 @@ const App: React.FC = () => {
         {/* Orders Section (Right) */}
         <section className="col-span-3 bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden flex flex-col">
           <div className="bg-stone-700 px-2 py-1 flex items-center justify-between text-white shrink-0">
-            <div className="flex items-center gap-1"><AlertCircle className="w-3 h-3 text-red-300" /><h2 className="text-[9px] font-black uppercase tracking-wider truncate">订单</h2></div>
+            <div className="flex items-center gap-1"><AlertCircle className="w-3 h-3 text-red-300" /><h2 className="text-[10px] font-black uppercase tracking-wider truncate">订单</h2></div>
             <span className="bg-white/20 text-[8px] px-1.5 rounded-full font-black">{state.activeOrders.length}</span>
           </div>
             <div className="p-1 space-y-1 flex-1 overflow-y-auto bg-stone-100/10">
