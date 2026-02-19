@@ -572,7 +572,7 @@ const App: React.FC = () => {
           .desktop-scale .supply-row .text-\\[10px\\] { font-size: 16px !important; }
           .desktop-scale .supply-row .text-\\[7px\\] { font-size: 12px !important; }
           .desktop-scale .supply-row .text-\\[9px\\] { font-size: 14px !important; }
-          .desktop-scale .supply-row h2 { font-size: 12px !important; }
+          .desktop-scale .supply-row h2 { font-size: 16px !important; }
           .desktop-scale .supply-row svg { width: 16px !important; height: 16px !important; }
           .desktop-scale .supply-row .h-\\[29px\\] { height: 48px !important; min-height: 48px !important; }
           .desktop-scale .supply-row .min-h-\\[29px\\] { min-height: 48px !important; }
@@ -587,18 +587,21 @@ const App: React.FC = () => {
           .desktop-scale .recipe-grid .text-\\[8px\\] { font-size: 12px !important; }
           .desktop-scale .recipe-grid .text-\\[9px\\] { font-size: 14px !important; }
           .desktop-scale .recipe-grid svg { width: 20px !important; height: 20px !important; }
-          .desktop-scale .recipe-grid h2 { font-size: 14px !important; }
+          .desktop-scale .recipe-grid h2 { font-size: 16px !important; }
           
           /* 操作间 */
-          .desktop-scale section[class*="h-\\[25%\\]"] { padding: 16px 24px !important; }
+          .desktop-scale section[class*="h-\\[25%\\]"] { padding: 8px !important; }
           .desktop-scale section[class*="h-\\[25%\\]"] svg { width: 16px !important; height: 16px !important; }
           .desktop-scale section[class*="h-\\[25%\\]"] .text-2xl { font-size: 36px !important; }
+          .desktop-scale section[class*="h-\\[25%\\]"] .text-\\[14px\\] { font-size: 20px !important; }
+          .desktop-scale section[class*="h-\\[25%\\]"] .text-\\[13px\\] { font-size: 16px !important; }
           .desktop-scale section[class*="h-\\[25%\\]"] .text-\\[8px\\] { font-size: 12px !important; }
           .desktop-scale section[class*="h-\\[25%\\]"] .text-\\[7px\\] { font-size: 10px !important; }
           
           /* 订单区域 */
           .desktop-scale .col-span-3:last-child section { padding: 12px !important; }
           .desktop-scale .col-span-3 svg { width: 16px !important; height: 16px !important; }
+          .desktop-scale .col-span-3 h2 { font-size: 16px !important; }
           .desktop-scale .col-span-3 .text-2xl { font-size: 36px !important; }
           .desktop-scale .col-span-3 .text-\\[9px\\] { font-size: 14px !important; }
           .desktop-scale .col-span-3 .text-\\[7px\\] { font-size: 12px !important; }
@@ -662,7 +665,10 @@ const App: React.FC = () => {
                   <div className="w-16 flex flex-col gap-0.5">
                     <button onClick={() => buyIngredient(id)} disabled={isLowMoney || isFull || state.isPaused} className={`relative w-full h-[29px] flex items-center justify-between px-1.5 rounded-md border transition-all bg-white shadow-sm ${!isFull && !isLowMoney && !state.isPaused ? 'border-stone-100 hover:border-blue-400' : 'border-stone-100 opacity-60 cursor-not-allowed'}`}>
                       <span className="text-lg leading-none shrink-0">{ing.icon}</span>
-                      <span className={`font-black text-[7px] shrink-0 ${isLowMoney ? 'text-stone-300' : 'text-blue-600'}`}>${ing.price}</span>
+                      <div className="flex flex-col items-end justify-between h-full py-0.5">
+                        <span className={`font-black text-[7px] shrink-0 leading-none ${isLowMoney ? 'text-stone-300' : 'text-blue-600'}`}>${ing.price}</span>
+                        <span className="text-[7px] text-stone-400 leading-none">{ing.deliveryTime}s</span>
+                      </div>
                     </button>
                     <div className="h-0.5 flex gap-0.5 px-0.5">{pendingItems.map(d => (<div key={d.id} className="flex-1 h-full bg-stone-200 rounded-full overflow-hidden relative"><div className="absolute left-0 top-0 h-full bg-blue-500 transition-all duration-1000 ease-linear" style={{ width: `${((ing.deliveryTime - d.timeLeft) / ing.deliveryTime) * 100}%` }} /></div>))}</div>
                   </div>
@@ -682,7 +688,7 @@ const App: React.FC = () => {
           {/* Menu Section */}
           <section className="h-[75%] bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden flex flex-col">
             <div className="bg-stone-700 px-2 py-1 flex items-center justify-between text-white shrink-0">
-              <div className="flex items-center gap-1"><TrendingUp className="w-3 h-3 text-orange-300" /><h2 className="text-[10px] font-black uppercase tracking-wider truncate">菜谱</h2></div>
+              <div className="flex items-center gap-1"><TrendingUp className="w-3 h-3 text-orange-300" /><h2 className="text-[13px] font-black uppercase tracking-wider truncate">菜单</h2></div>
             </div>
             <div className="p-1 recipe-grid overflow-y-auto flex-1 bg-stone-100/10">
               {[...RECIPES].sort((a, b) => a.salePrice - b.salePrice).map(recipe => {
@@ -706,7 +712,10 @@ const App: React.FC = () => {
                             </div>
                           ))}
                        </div>
-                       <div className={`mt-auto text-[9px] font-black text-center py-0.5 rounded shadow-inner ${canCook ? 'bg-green-500 text-white' : 'bg-stone-200 text-stone-400'}`}>${recipe.salePrice}</div>
+                       <div className={`mt-auto text-[9px] font-black text-center py-0.5 rounded shadow-inner flex flex-row items-center justify-center gap-1 ${canCook ? 'bg-green-500 text-white' : 'bg-stone-200 text-stone-400'}`}>
+                          <span>${recipe.salePrice}</span>
+                          <span className="text-[9px] opacity-80">⏱{recipe.cookingTime}s</span>
+                        </div>
                     </div>
                   </button>
                 );
@@ -715,16 +724,12 @@ const App: React.FC = () => {
           </section>
 
           {/* Cooking Section */}
-          <section className="h-[25%] flex flex-col overflow-hidden px-2 -mt-0.5">
-            <div className="flex items-center gap-1">
-              <Flame className="w-3 h-3 text-orange-500" />
-              <span className="text-[10px] font-black uppercase tracking-wider text-stone-400">灶台</span>
-            </div>
-            <div className="flex-1 flex gap-2">
+          <section className="h-[25%] bg-white rounded-xl shadow-sm border border-stone-200 flex flex-col overflow-hidden p-1">
+            <div className="flex-1 flex gap-1">
               {state.stoves.map(stove => {
                 const activeRecipe = RECIPES.find(r => r.id === stove.dishId);
                 return (
-                  <div key={stove.id} className="flex-1 relative px-2 py-1 rounded-lg border border-stone-100 bg-stone-50/50 flex items-center shadow-inner group overflow-hidden">
+                  <div key={stove.id} className="flex-1 relative px-1 py-1 rounded-lg border border-stone-100 bg-stone-50/50 flex items-center shadow-inner group overflow-hidden">
                     {stove.isCooking ? (
                       <div className="w-full flex items-center gap-2 animate-in slide-in-from-bottom-1 duration-200">
                         <button onClick={() => cancelCooking(stove.id)} disabled={state.isPaused} className={`p-0.5 text-red-400 rounded-full transition-colors ${state.isPaused ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-50'}`}><XCircle className="w-3.5 h-3.5" /></button>
@@ -740,7 +745,7 @@ const App: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="w-full text-center opacity-10 text-[7px] font-black uppercase tracking-widest flex items-center justify-center gap-1"><Flame className="w-3 h-3" /> 就绪</div>
+                      <div className="w-full text-center opacity-10 text-[14px] font-black uppercase tracking-widest flex items-center justify-center gap-1"><Flame className="w-3 h-3" /> 灶台</div>
                     )}
                   </div>
                 );
@@ -752,7 +757,7 @@ const App: React.FC = () => {
         {/* Orders Section (Right) */}
         <section className="col-span-3 bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden flex flex-col">
           <div className="bg-stone-700 px-2 py-1 flex items-center justify-between text-white shrink-0">
-            <div className="flex items-center gap-1"><AlertCircle className="w-3 h-3 text-red-300" /><h2 className="text-[10px] font-black uppercase tracking-wider truncate">订单</h2></div>
+            <div className="flex items-center gap-1"><AlertCircle className="w-3 h-3 text-red-300" /><h2 className="text-[13px] font-black uppercase tracking-wider truncate">订单</h2></div>
             <span className="bg-white/20 text-[8px] px-1.5 rounded-full font-black">{state.activeOrders.length}</span>
           </div>
             <div className="p-1 space-y-1 flex-1 overflow-y-auto bg-stone-100/10">
@@ -793,18 +798,6 @@ const App: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-4 border-orange-200 animate-in zoom-in duration-300" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-orange-600 text-white px-6 py-4 flex items-center justify-between border-b-4 border-orange-700 z-10">
               <h2 className="text-2xl font-black uppercase tracking-wider">游戏规则</h2>
-              <button 
-                onClick={() => { 
-                  setShowRules(false); 
-                  if (state.gameStatus === 'playing') {
-                    setState(prev => ({ ...prev, isPaused: false })); 
-                  }
-                }} 
-                className="p-2 hover:bg-orange-700 rounded-lg transition-colors z-50 relative"
-                style={{ pointerEvents: 'auto', zIndex: 999 }}
-              >
-                <XCircle className="w-6 h-6" />
-              </button>
             </div>
             <div className="p-6 space-y-6 text-stone-800">
               <section>
