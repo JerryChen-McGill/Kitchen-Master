@@ -1,9 +1,12 @@
 
 import { Ingredient, Recipe, IngredientId } from './types';
 
-export const GAME_DURATION = 240; // 4 minutes
+export const GAME_DURATION = 300; // 5 minutes
 export const INITIAL_MONEY = 100; 
-export const STOVE_COUNT = 2;
+export const STOVE_COUNT = 4; // 最大灶台数
+export const INITIAL_STOVES = 2; // 初始可用灶台数
+export const STOVE_INSTALL_COST = 200; // 安装一个新灶台的费用
+export const STOVE_INSTALL_TIME = 60; // 安装一个新灶台需要的时间（秒）
 
 export const INGREDIENTS: Record<IngredientId, Ingredient> = {
   tomato: { id: 'tomato', name: '番茄', price: 6, icon: '🍅', deliveryTime: 12 },

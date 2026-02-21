@@ -3,16 +3,71 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   ShoppingCart, Flame, Clock, DollarSign, Package, Play, 
   RotateCcw, AlertCircle, Heart, TrendingUp, TrendingDown, 
-  Truck, Star, Volume2, VolumeX, XCircle, Trash2, Skull
+  Truck, Star, Volume2, VolumeX, XCircle, Trash2, Skull, Trophy, User
 } from 'lucide-react';
-import { INGREDIENTS, RECIPES, INITIAL_MONEY, GAME_DURATION, STOVE_COUNT } from './constants';
+import { INGREDIENTS, RECIPES, INITIAL_MONEY, GAME_DURATION, STOVE_COUNT, INITIAL_STOVES, STOVE_INSTALL_COST, STOVE_INSTALL_TIME } from './constants';
 import { IngredientId, GameState, Recipe, Order, Stove, PendingDelivery, CustomerType } from './types';
+
+// 排行榜相关函数
+interface LeaderboardEntry {
+  name: string;
+  score: number;
+  popularity: number;
+  date: string;
+}
+
+const getLeaderboard = (): LeaderboardEntry[] => {
+  const data = localStorage.getItem('kitchenMaster_leaderboard');
+  return data ? JSON.parse(data) : [];
+};
+
+const saveToLeaderboard = (name: string, score: number, popularity: number) => {
+  const leaderboard = getLeaderboard();
+  leaderboard.push({ name, score, popularity, date: new Date().toLocaleDateString() });
+  leaderboard.sort((a, b) => b.score - a.score);
+  const top10 = leaderboard.slice(0, 10);
+  localStorage.setItem('kitchenMaster_leaderboard', JSON.stringify(top10));
+};
+
+const isLeaderboardQualified = (score: number): boolean => {
+  const leaderboard = getLeaderboard();
+  if (leaderboard.length < 10) return true;
+  return score > leaderboard[leaderboard.length - 1].score;
+};
+
+// 最高分相关函数
+const getHighScore = (): number => {
+  const data = localStorage.getItem('kitchenMaster_highscore');
+  return data ? parseInt(data, 10) : 0;
+};
+
+const saveHighScore = (score: number) => {
+  const currentHigh = getHighScore();
+  if (score > currentHigh) {
+    localStorage.setItem('kitchenMaster_highscore', score.toString());
+    return true;
+  }
+  return false;
+};
+
+// 创建灶台数组 - 初始只有前INITIAL_STOVES个灶台已安装
+const createStoves = (): Stove[] => {
+  return Array(STOVE_COUNT).fill(null).map((_, i) => ({
+    id: i,
+    isInstalled: i < INITIAL_STOVES, // 前2个灶台默认已安装
+    installTimeLeft: 0,
+    isCooking: false,
+    dishId: null,
+    timeRemaining: 0,
+    progress: 0
+  }));
+};
 
 const App: React.FC = () => {
   const [state, setState] = useState<GameState>({
     money: INITIAL_MONEY,
     inventory: { tomato: 2, lettuce: 2, onion: 2, meat: 2, bread: 2, cheese: 2, potato: 2 },
-    stoves: Array(STOVE_COUNT).fill(null).map((_, i) => ({ id: i, isCooking: false, dishId: null, timeRemaining: 0, progress: 0 })),
+    stoves: createStoves(),
     activeOrders: [],
     pendingDeliveries: [],
     totalRevenue: 0,
@@ -23,6 +78,13 @@ const App: React.FC = () => {
   });
   
   const [showRules, setShowRules] = useState(false);
+  const [showHomepage, setShowHomepage] = useState(true);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showHighScore, setShowHighScore] = useState(false);
+  const [playerName, setPlayerName] = useState('');
+  const [showNameEntry, setShowNameEntry] = useState(false);
+  const [pendingScore, setPendingScore] = useState(0);
+  const [pendingPopularity, setPendingPopularity] = useState(0);
 
   const [notification, setNotification] = useState<{msg: string, type: 'success' | 'error' | 'neutral'} | null>(null);
   const [isMuted, setIsMuted] = useState(false);
@@ -142,6 +204,24 @@ const App: React.FC = () => {
     if (bgmRef.current) bgmRef.current.muted = isMuted;
   }, [isMuted]);
 
+  // 游戏结束后检查排行榜和最高分
+  useEffect(() => {
+    if (state.gameStatus === 'ended' && state.money > 0) {
+      // 保存最高分
+      saveHighScore(state.money);
+      
+      // 检查是否进入排行榜
+      if (isLeaderboardQualified(state.money)) {
+        setPendingScore(state.money);
+        setPendingPopularity(state.popularity);
+        setShowNameEntry(true);
+      } else {
+        // 不进入排行榜则返回首页
+        setShowHomepage(true);
+      }
+    }
+  }, [state.gameStatus]);
+
   const playSfx = (audio: HTMLAudioElement | null) => {
     if (isMuted || !audio) return;
     audio.currentTime = 0;
@@ -163,13 +243,15 @@ const App: React.FC = () => {
     else if (roll < 0.30) type = 'grumpy';
     else if (roll < 0.45) type = 'happy';
     
-    const expiry = 45 + Math.floor(Math.random() * 25);
+    const expiry = 20 + Math.floor(Math.random() * 30); // 20-50秒
     return {
       id: Math.random().toString(36).substr(2, 9),
       dishId: randomRecipe.id,
       expiryTime: expiry,
       maxTime: expiry,
-      type
+      type,
+      isUrgent: false,
+      urgentTimeLeft: 0
     };
   };
 
@@ -179,8 +261,8 @@ const App: React.FC = () => {
     setState({
       money: INITIAL_MONEY,
       inventory: { tomato: 2, lettuce: 2, onion: 2, meat: 2, bread: 2, cheese: 2, potato: 2 },
-      stoves: Array(STOVE_COUNT).fill(null).map((_, i) => ({ id: i, isCooking: false, dishId: null, timeRemaining: 0, progress: 0 })),
-      activeOrders: [createNewOrder(), createNewOrder(), createNewOrder()], // 初始3个订单（100%人气）
+      stoves: createStoves(),
+      activeOrders: [createNewOrder(), createNewOrder(), createNewOrder(), createNewOrder()], // 初始4个订单（100%人气）
       pendingDeliveries: [],
       totalRevenue: 0,
       popularity: 100,
@@ -192,6 +274,7 @@ const App: React.FC = () => {
 
   const buyIngredient = (id: IngredientId) => {
     if (state.isPaused) return;
+    if (state.money <= 0) return notify("资金不足，无法购买原材料!", 'error');
     
     const item = INGREDIENTS[id];
     const pendingCount = state.pendingDeliveries.filter(d => d.ingredientId === id).length;
@@ -214,6 +297,22 @@ const App: React.FC = () => {
     }
   };
 
+  const sellIngredient = (id: IngredientId) => {
+    if (state.isPaused) return;
+    if (state.inventory[id] <= 0) return notify("仓库中没有该食材!", 'error');
+    
+    const item = INGREDIENTS[id];
+    const sellPrice = Math.floor(item.price / 2); // 半价卖出
+    
+    playSfx(sfxSuccess.current);
+    setState(prev => ({
+      ...prev,
+      money: prev.money + sellPrice,
+      inventory: { ...prev.inventory, [id]: prev.inventory[id] - 1 }
+    }));
+    notify(`卖出 ${item.name} +$${sellPrice}`, 'success');
+  };
+
   const startCooking = (recipe: Recipe) => {
     if (state.isPaused) return;
     
@@ -224,11 +323,11 @@ const App: React.FC = () => {
     if (missing.length > 0) {
       setFlashingIngredients(missing);
       setTimeout(() => setFlashingIngredients([]), 1500);
-      return notify("食材短缺!", 'error');
+      return;
     }
 
-    const freeStoveIndex = state.stoves.findIndex(s => !s.isCooking);
-    if (freeStoveIndex === -1) return notify("灶台全满!", 'error');
+    const freeStoveIndex = state.stoves.findIndex(s => s.isInstalled && !s.isCooking);
+    if (freeStoveIndex === -1) return notify("没有可用的灶台!", 'error');
 
     playSfx(sfxCook.current);
     const newInventory = { ...state.inventory };
@@ -251,11 +350,34 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, stoves: newStoves }));
   };
 
+  // 安装新灶台
+  const installStove = (stoveId: number) => {
+    if (state.isPaused) return;
+    
+    const stove = state.stoves[stoveId];
+    if (stove.isInstalled || stove.installTimeLeft > 0) return; // 灶台已安装或正在安装
+    if (state.money < STOVE_INSTALL_COST) return notify("资金不足，无法安装新灶台!", 'error');
+    
+    playSfx(sfxBuy.current);
+    setState(prev => ({
+      ...prev,
+      money: prev.money - STOVE_INSTALL_COST,
+      stoves: prev.stoves.map(s => {
+        if (s.id === stoveId) {
+          return { ...s, installTimeLeft: STOVE_INSTALL_TIME };
+        }
+        return s;
+      })
+    }));
+    notify(`开始安装新灶台...`, 'neutral');
+  };
+
   // 根据人气值计算最大订单数
   const getMaxOrders = (popularity: number): number => {
-    if (popularity >= 75) return 3;  // 75-100%: 3个订单
-    if (popularity >= 50) return 2;   // 50-75%: 2个订单
-    return 1;                         // 50%以下: 1个订单
+    if (popularity >= 80) return 4;  // 80-100%: 4个订单
+    if (popularity >= 60) return 3;  // 60-80%: 3个订单
+    if (popularity >= 40) return 2; // 40-60%: 2个订单
+    return 1;                        // 40%以下: 1个订单
   };
 
   const togglePause = () => {
@@ -277,7 +399,7 @@ const App: React.FC = () => {
     // 如果未暂停，启动定时器
     timerRef.current = window.setInterval(() => {
       setState(prev => {
-        if (prev.timeLeft <= 0 || prev.popularity <= 0 || prev.money <= 0) { 
+        if (prev.timeLeft <= 0 || prev.popularity <= 0) { 
           clearInterval(timerRef.current!); 
           bgmRef.current?.pause();
           return { ...prev, gameStatus: 'ended', timeLeft: Math.max(0, prev.timeLeft) }; 
@@ -296,6 +418,16 @@ const App: React.FC = () => {
         });
 
         const updatedStoves = prev.stoves.map(s => {
+          // 处理灶台安装倒计时
+          if (s.installTimeLeft > 0) {
+            const newInstallTime = s.installTimeLeft - 1;
+            if (newInstallTime === 0) {
+              // 安装完成
+              return { ...s, isInstalled: true, installTimeLeft: 0 };
+            }
+            return { ...s, installTimeLeft: newInstallTime };
+          }
+          // 处理烹饪倒计时
           if (!s.isCooking) return s;
           const recipe = RECIPES.find(r => r.id === s.dishId)!;
           const newTime = Math.max(0, s.timeRemaining - 1);
@@ -328,17 +460,49 @@ const App: React.FC = () => {
           return s;
         });
 
-        const expired = currentOrders.filter(o => o.expiryTime <= 1);
+        const expired = currentOrders.filter(o => !o.isUrgent && o.expiryTime <= 1);
         expired.forEach(o => {
-          let popLoss = 5;
-          if (o.type === 'blogger') { popLoss = 30; }
-          if (o.type === 'grumpy') { popLoss = 20; }
-          newPopularity = Math.max(0, newPopularity - popLoss);
-          notify("订单过期!", "error");
+          // 订单到期，进入紧急催单状态
+          const orderIndex = currentOrders.findIndex(ord => ord.id === o.id);
+          if (orderIndex !== -1) {
+            currentOrders[orderIndex] = { ...currentOrders[orderIndex], isUrgent: true, urgentTimeLeft: 20, expiryTime: 0 };
+            notify("订单超时! 顾客正在催单!", "error");
+          }
         });
 
-        // 先更新剩余时间，然后过滤掉过期的
-        let remainingOrders = currentOrders.map(o => ({ ...o, expiryTime: o.expiryTime - 1 })).filter(o => o.expiryTime > 0);
+        // 处理紧急催单状态的订单
+        const urgentOrders = currentOrders.filter(o => o.isUrgent);
+        urgentOrders.forEach(o => {
+          const newUrgentTime = o.urgentTimeLeft - 1;
+          const orderIndex = currentOrders.findIndex(ord => ord.id === o.id);
+          
+          if (newUrgentTime <= 0) {
+            // 紧急时间到，订单彻底过期，扣除人气值
+            let popLoss = 5;
+            if (o.type === 'blogger') { popLoss = 30; }
+            if (o.type === 'grumpy') { popLoss = 20; }
+            newPopularity = Math.max(0, newPopularity - popLoss);
+            notify("订单过期!", "error");
+            // 标记为待删除
+            if (orderIndex !== -1) {
+              currentOrders[orderIndex] = { ...currentOrders[orderIndex], urgentTimeLeft: -1 };
+            }
+          } else if (o.urgentTimeLeft % 2 === 0) {
+            // 每过2秒扣1点人气值 (当剩余时间是偶数时)
+            newPopularity = Math.max(0, newPopularity - 1);
+          }
+        });
+
+        // 更新紧急订单的倒计时
+        currentOrders = currentOrders.map(o => {
+          if (o.isUrgent) {
+            return { ...o, urgentTimeLeft: Math.max(-1, o.urgentTimeLeft - 1) };
+          }
+          return { ...o, expiryTime: o.expiryTime - 1 };
+        });
+
+        // 过滤掉已过期的订单（urgentTimeLeft < 0 或 正常订单 expiryTime <= 0）
+        let remainingOrders = currentOrders.filter(o => (!o.isUrgent && o.expiryTime > 0) || (o.isUrgent && o.urgentTimeLeft >= 0));
         
         // 根据更新后的人气值计算最大订单数
         const maxOrders = getMaxOrders(newPopularity);
@@ -370,39 +534,185 @@ const App: React.FC = () => {
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
-  if (state.gameStatus === 'idle' || state.gameStatus === 'ended') {
-    const isBankrupt = state.gameStatus === 'ended' && (state.popularity <= 0 || state.money <= 0);
+  // 主页UI
+  if (showHomepage) {
+    const highScore = getHighScore();
     return (
-      <div className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-1000 ${isBankrupt ? 'bg-red-950' : 'bg-orange-50'}`}>
-        <div className={`max-w-md w-full bg-white rounded-[2rem] shadow-2xl p-6 text-center border-2 ${isBankrupt ? 'border-red-600' : 'border-orange-200'}`}>
-          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner ${isBankrupt ? 'bg-red-100' : 'bg-orange-100'}`}>
-            {state.gameStatus === 'idle' ? <Flame className="w-8 h-8 text-orange-600" /> : isBankrupt ? <Skull className="w-8 h-8 text-red-600 animate-pulse" /> : <TrendingUp className="w-8 h-8 text-green-600" />}
-          </div>
-          <h1 className="text-2xl font-black text-stone-800 mb-4 uppercase tracking-tighter">Kitchen Master</h1>
-          
-          {state.gameStatus === 'ended' && (
-            <div className="mb-4 p-4 bg-stone-50 rounded-2xl border border-stone-100 shadow-sm">
-              <div className="text-4xl font-black text-orange-600 mb-1">${state.money.toFixed(0)}</div>
-              <div className="text-stone-400 font-bold uppercase text-[10px] mb-2">最终资金</div>
-              <div className="flex justify-around items-center pt-2 border-t border-stone-200/50">
-                <div className="flex flex-col items-center">
-                  <span className="text-lg font-black text-red-500">{state.popularity}%</span>
-                  <span className="text-[8px] uppercase font-bold text-stone-400">口碑</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <span className="text-lg font-black text-green-500">${state.totalRevenue.toFixed(0)}</span>
-                  <span className="text-[8px] uppercase font-bold text-stone-400">总收入</span>
-                </div>
-              </div>
+      <div className="min-h-screen bg-gradient-to-b from-orange-100 to-orange-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          {/* Logo区域 */}
+          <div className="text-center mb-8">
+            <div className="w-24 h-24 rounded-full bg-orange-500 flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Flame className="w-12 h-12 text-white" />
             </div>
-          )}
-          
-          <button onClick={startGame} className={`w-full text-white font-black py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-lg shadow-md active:translate-y-[4px] active:shadow-none ${isBankrupt ? 'bg-stone-900 hover:bg-black shadow-[0_4px_0_#000]' : 'bg-orange-600 hover:bg-orange-700 shadow-[0_4px_0_#9a3412]'}`}>
-            <Play className="w-5 h-5 fill-current" /> {state.gameStatus === 'idle' ? '开始经营' : '重新开始'}
-          </button>
+            <h1 className="text-4xl font-black text-orange-600 uppercase tracking-wider">Kitchen Master</h1>
+            <p className="text-stone-500 font-bold mt-2">汉堡店经营模拟游戏</p>
+          </div>
+
+          {/* 按钮区域 */}
+          <div className="space-y-4">
+            <button 
+              onClick={() => { setShowHomepage(false); startGame(); }}
+              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black py-4 rounded-2xl text-xl shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-3"
+            >
+              <Play className="w-6 h-6 fill-current" /> 开始经营
+            </button>
+
+            <div className="flex gap-4">
+              <button 
+                onClick={() => { setShowHomepage(false); setShowLeaderboard(true); }}
+                className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-black py-3 rounded-xl text-lg shadow-md active:scale-95 transition-transform flex items-center justify-center gap-2"
+              >
+                <Trophy className="w-5 h-5" /> 排行榜
+              </button>
+              <button 
+                onClick={() => { setShowHomepage(false); setShowHighScore(true); }}
+                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-black py-3 rounded-xl text-lg shadow-md active:scale-95 transition-transform flex items-center justify-center gap-2"
+              >
+                <Star className="w-5 h-5" /> 我的分数
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
+  }
+
+  // 排行榜UI
+  if (showLeaderboard) {
+    const leaderboard = getLeaderboard();
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-yellow-50 to-yellow-100 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-[2rem] shadow-2xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <Trophy className="w-8 h-8 text-yellow-500" />
+              <h2 className="text-2xl font-black text-stone-800">排行榜</h2>
+            </div>
+            <button onClick={() => { setShowLeaderboard(false); setShowHomepage(true); }} className="p-2 bg-stone-100 rounded-full hover:bg-stone-200">
+              <XCircle className="w-6 h-6 text-stone-500" />
+            </button>
+          </div>
+
+          {leaderboard.length === 0 ? (
+            <div className="text-center py-8">
+              <Trophy className="w-16 h-16 text-yellow-200 mx-auto mb-4" />
+              <p className="text-stone-500 font-bold">暂无记录</p>
+              <p className="text-stone-400 text-sm mt-2">快来成为第一个上榜的玩家吧！</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {leaderboard.map((entry, index) => (
+                <div key={index} className={`flex items-center p-3 rounded-xl ${index < 3 ? 'bg-yellow-50' : 'bg-stone-50'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm ${index === 0 ? 'bg-yellow-400 text-white' : index === 1 ? 'bg-gray-300 text-white' : index === 2 ? 'bg-amber-600 text-white' : 'bg-stone-200 text-stone-600'}`}>
+                    {index + 1}
+                  </div>
+                  <div className="flex-1 ml-3">
+                    <div className="font-black text-stone-800">{entry.name}</div>
+                    <div className="text-xs text-stone-400">{entry.date}</div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <div className="font-black text-orange-600 text-lg">${entry.score}</div>
+                    <div className={`text-xs font-bold ${entry.popularity > 0 ? 'text-red-500' : 'text-stone-400'}`}>
+                      人气: {entry.popularity}%
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // 最高分记录UI
+  if (showHighScore) {
+    const highScore = getHighScore();
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-100 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-[2rem] shadow-2xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <Star className="w-8 h-8 text-blue-500" />
+              <h2 className="text-2xl font-black text-stone-800">我的分数</h2>
+            </div>
+            <button onClick={() => { setShowHighScore(false); setShowHomepage(true); }} className="p-2 bg-stone-100 rounded-full hover:bg-stone-200">
+              <XCircle className="w-6 h-6 text-stone-500" />
+            </button>
+          </div>
+
+          <div className="text-center py-8">
+            <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-4">
+              <Star className="w-10 h-10 text-blue-500 fill-current" />
+            </div>
+            <div className="text-5xl font-black text-blue-600 mb-2">${highScore}</div>
+            <div className="text-stone-500 font-bold">历史最高分</div>
+            {highScore === 0 && (
+              <p className="text-stone-400 text-sm mt-4">开始游戏来创造你的最高分吧！</p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 进入排行榜的名字输入UI
+  if (showNameEntry) {
+    return (
+      <div className="min-h-screen bg-black/50 flex items-center justify-center p-4">
+        <div className="max-w-sm w-full bg-white rounded-[2rem] shadow-2xl p-6">
+          <div className="text-center mb-6">
+            <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-black text-stone-800">恭喜上榜！</h2>
+            <p className="text-stone-500 mt-2">你的分数 ${pendingScore} 进入了排行榜！</p>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-bold text-stone-600 mb-2">输入你的昵称</label>
+              <input
+                type="text"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                placeholder="请输入昵称"
+                maxLength={10}
+                className="w-full px-4 py-3 rounded-xl border-2 border-stone-200 font-bold text-center focus:border-orange-500 focus:outline-none"
+              />
+            </div>
+            <button
+              onClick={() => {
+                if (playerName.trim()) {
+                  saveToLeaderboard(playerName.trim(), pendingScore, pendingPopularity);
+                  setShowNameEntry(false);
+                  setShowLeaderboard(true);
+                  setPlayerName('');
+                }
+              }}
+              disabled={!playerName.trim()}
+              className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-stone-300 text-white font-black py-3 rounded-xl text-lg disabled:cursor-not-allowed"
+            >
+              保存到排行榜
+            </button>
+            <button
+              onClick={() => {
+                setShowNameEntry(false);
+                setShowHomepage(true);
+                setPlayerName('');
+              }}
+              className="w-full bg-stone-200 hover:bg-stone-300 text-stone-600 font-black py-3 rounded-xl text-lg"
+            >
+              稍后再说
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 游戏进行中或结束 - 重定向到首页
+  if (state.gameStatus === 'idle' || state.gameStatus === 'ended') {
+    return <></>;
   }
 
   return (
@@ -672,7 +982,7 @@ const App: React.FC = () => {
                     </button>
                     <div className="h-0.5 flex gap-0.5 px-0.5">{pendingItems.map(d => (<div key={d.id} className="flex-1 h-full bg-stone-200 rounded-full overflow-hidden relative"><div className="absolute left-0 top-0 h-full bg-blue-500 transition-all duration-1000 ease-linear" style={{ width: `${((ing.deliveryTime - d.timeLeft) / ing.deliveryTime) * 100}%` }} /></div>))}</div>
                   </div>
-                  <div className={`flex-1 p-0.5 rounded-lg bg-white border transition-all shadow-sm flex items-center h-[29px] min-h-[29px] mt-0 ${flashingIngredients.includes(id) ? 'animate-flash-red border-red-500' : 'border-stone-100'}`}>
+                  <div className={`flex-1 p-0.5 rounded-lg bg-white border transition-all shadow-sm flex items-center h-[29px] min-h-[29px] mt-0 cursor-pointer ${flashingIngredients.includes(id) ? 'animate-flash-red border-red-500' : 'border-stone-100 hover:border-orange-300'}`} onClick={() => sellIngredient(id)} title="点击卖出（半价）">
                     <div className="flex-1 grid grid-cols-10 gap-0.5 p-0.5 bg-stone-50/50 rounded-md h-full min-h-full">
                       {Array.from({ length: 10 }).map((_, i) => (<div key={i} className={`flex items-center justify-center rounded-sm border aspect-square ${i < state.inventory[id] ? 'bg-white border-stone-50' : 'border-dashed border-stone-100/10'}`}>{i < state.inventory[id] && <span className="text-[10px] leading-none">{ing.icon}</span>}</div>))}
                     </div>
@@ -728,24 +1038,73 @@ const App: React.FC = () => {
             <div className="flex-1 flex gap-1">
               {state.stoves.map(stove => {
                 const activeRecipe = RECIPES.find(r => r.id === stove.dishId);
+                const isInstalling = stove.installTimeLeft > 0;
+                const canInstall = !stove.isInstalled && !isInstalling && state.money >= STOVE_INSTALL_COST;
+                
                 return (
-                  <div key={stove.id} className="flex-1 relative px-1 py-1 rounded-lg border border-stone-100 bg-stone-50/50 flex items-center shadow-inner group overflow-hidden">
-                    {stove.isCooking ? (
-                      <div className="w-full flex items-center gap-2 animate-in slide-in-from-bottom-1 duration-200">
-                        <button onClick={() => cancelCooking(stove.id)} disabled={state.isPaused} className={`p-0.5 text-red-400 rounded-full transition-colors ${state.isPaused ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-50'}`}><XCircle className="w-3.5 h-3.5" /></button>
-                        <div className="text-2xl shrink-0">{activeRecipe?.icon}</div>
-                        <div className="flex-1 flex flex-col gap-0.5">
-                          <div className="flex justify-between items-center px-1">
-                             <span className="text-[8px] font-black uppercase text-stone-400 truncate max-w-[50px]">{activeRecipe?.name}</span>
-                             <span className="bg-orange-600 text-white px-1 rounded-sm font-black text-[8px] shadow-sm animate-pulse">{stove.timeRemaining}s</span>
+                  <div key={stove.id} className={`flex-1 relative px-1 py-1 rounded-lg border flex items-center shadow-inner group overflow-hidden transition-all ${
+                    !stove.isInstalled 
+                      ? 'bg-stone-100 border-dashed border-stone-300' 
+                      : 'bg-stone-50/50 border-stone-100'
+                  }`}>
+                    {/* 未安装的灶台 - 显示+号和安装按钮 */}
+                    {!stove.isInstalled ? (
+                      isInstalling ? (
+                        // 正在安装中
+                        <div className="w-full flex flex-col items-center justify-center gap-1">
+                          <div className="text-lg animate-pulse">🔧</div>
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className="text-[8px] font-black text-orange-600">安装中...</span>
+                            <span className="text-[10px] font-black text-orange-500">{stove.installTimeLeft}s</span>
                           </div>
-                          <div className="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden border border-white">
-                            <div className="bg-gradient-to-r from-orange-400 to-red-600 h-full" style={{ width: `${stove.progress}%` }} />
+                          <div className="w-full bg-stone-200 h-1 rounded-full overflow-hidden">
+                            <div className="bg-gradient-to-r from-orange-400 to-red-500 h-full transition-all" style={{ width: `${((STOVE_INSTALL_TIME - stove.installTimeLeft) / STOVE_INSTALL_TIME) * 100}%` }} />
                           </div>
                         </div>
+                      ) : (
+                        // 未安装 - 显示+号和价格
+                        <button 
+                          onClick={() => installStove(stove.id)}
+                          disabled={state.isPaused || state.money < STOVE_INSTALL_COST}
+                          className={`w-full h-full flex flex-col items-center justify-center gap-0.5 transition-all ${
+                            state.money >= STOVE_INSTALL_COST && !state.isPaused
+                              ? 'cursor-pointer hover:bg-orange-50 active:scale-95' 
+                              : 'opacity-50 cursor-not-allowed'
+                          }`}
+                        >
+                          <div className="text-2xl font-black text-stone-300">+</div>
+                          <div className="flex flex-col items-center">
+                            <span className="text-[10px] font-bold text-stone-400 uppercase">安装灶台</span>
+                            <span className={`text-[10px] font-black ${state.money >= STOVE_INSTALL_COST ? 'text-green-600' : 'text-red-500'}`}>
+                              ${STOVE_INSTALL_COST}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-stone-400 font-medium">⏱{STOVE_INSTALL_TIME}秒</span>
+                        </button>
+                      )
+                    ) : stove.isCooking ? (
+                      // 烹饪中 - 三行布局
+                      <div className="w-full flex flex-col items-center justify-center gap-0.5 animate-in slide-in-from-bottom-1 duration-200 h-full py-0.5">
+                        {/* 第一排：菜品图标和名称 */}
+                        <div className="flex items-center gap-1">
+                          <div className="text-xl shrink-0">{activeRecipe?.icon}</div>
+                          <span className="text-[9px] font-black text-stone-700">{activeRecipe?.name}</span>
+                        </div>
+                        {/* 第二排：进度条和倒计时 */}
+                        <div className="w-full flex items-center gap-1 px-1">
+                          <div className="flex-1 bg-stone-200 h-1.5 rounded-full overflow-hidden border border-white">
+                            <div className="bg-gradient-to-r from-orange-400 to-red-600 h-full" style={{ width: `${stove.progress}%` }} />
+                          </div>
+                          <span className="bg-orange-600 text-white px-1 rounded-sm font-black text-[7px] shadow-sm animate-pulse shrink-0">{stove.timeRemaining}s</span>
+                        </div>
+                        {/* 第三排：关闭按钮 */}
+                        <button onClick={() => cancelCooking(stove.id)} disabled={state.isPaused} className={`text-red-400 hover:text-red-600 transition-colors ${state.isPaused ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                          <XCircle className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     ) : (
-                      <div className="w-full text-center opacity-10 text-[14px] font-black uppercase tracking-widest flex items-center justify-center gap-1"><Flame className="w-3 h-3" /> 灶台</div>
+                      // 空闲灶台
+                      <div className="w-full text-center opacity-15 text-[14px] font-black uppercase tracking-widest flex items-center justify-center gap-1"><Flame className="w-3 h-3" /> 灶台</div>
                     )}
                   </div>
                 );
@@ -763,21 +1122,35 @@ const App: React.FC = () => {
             <div className="p-1 space-y-1 flex-1 overflow-y-auto bg-stone-100/10">
               {state.activeOrders.map(order => {
                 const recipe = RECIPES.find(r => r.id === order.dishId)!;
-                const isCritical = order.expiryTime < 15;
-                const progressWidth = (order.expiryTime / order.maxTime) * 100;
+                const isUrgent = order.isUrgent;
+                const isCritical = !isUrgent && order.expiryTime < 15;
+                const displayTime = isUrgent ? order.urgentTimeLeft : order.expiryTime;
+                const displayMaxTime = isUrgent ? 20 : order.maxTime;
+                const progressWidth = (displayTime / displayMaxTime) * 100;
+                const canCook = Object.entries(recipe.ingredients).every(([ingId, count]) => state.inventory[ingId as IngredientId] >= (count || 0));
+                const hasFreeStove = state.stoves.some(s => s.isInstalled && !s.isCooking);
+                const canStart = canCook && hasFreeStove && !state.isPaused;
                 return (
-                  <div key={order.id} className={`flex flex-col p-1.5 rounded-lg border transition-all shadow-sm bg-white ${isCritical ? 'border-red-400 animate-pulse' : 'border-stone-50'}`}>
+                  <div key={order.id} className={`flex flex-col p-1.5 rounded-lg border transition-all shadow-sm bg-white ${isUrgent ? 'border-red-600 bg-red-50 animate-pulse' : isCritical ? 'border-red-400 animate-pulse' : 'border-stone-50'}`}>
                     <div className="flex items-center gap-1 mb-1">
                       <div className="text-2xl shrink-0">{recipe.icon}</div>
                       <div className="flex-1 min-w-0">
                         <div className="font-black text-stone-800 text-[9px] leading-tight truncate">{recipe.name}</div>
                         <div className="flex items-center justify-between text-[7px] font-black uppercase">
-                           <span className={isCritical ? 'text-red-600 font-bold' : 'text-stone-400'}>{order.expiryTime}s</span>
+                           <span className={isUrgent || isCritical ? 'text-red-600 font-bold' : 'text-stone-400'}>{isUrgent ? `催单! ${displayTime}s` : `${displayTime}s`}</span>
                            <span className={order.type === 'blogger' ? 'text-purple-500' : 'text-stone-300'}>{order.type === 'blogger' ? '博主' : '普通'}</span>
                         </div>
                       </div>
+                      {canStart && (
+                        <button 
+                          onClick={() => startCooking(recipe)}
+                          className="ml-1 px-2 py-0.5 bg-green-500 hover:bg-green-600 text-white text-[8px] font-black rounded shadow-sm active:scale-95 transition-transform"
+                        >
+                          好嘞
+                        </button>
+                      )}
                     </div>
-                    <div className="w-full bg-stone-100 h-1 rounded-full overflow-hidden"><div className={`h-full transition-all duration-1000 ease-linear ${isCritical ? 'bg-red-500' : 'bg-orange-400'}`} style={{ width: `${progressWidth}%` }} /></div>
+                    <div className="w-full bg-stone-100 h-1 rounded-full overflow-hidden"><div className={`h-full transition-all duration-1000 ease-linear ${isUrgent ? 'bg-red-600 animate-pulse' : isCritical ? 'bg-red-500' : 'bg-orange-400'}`} style={{ width: `${progressWidth}%` }} /></div>
                   </div>
                 );
               })}
@@ -794,15 +1167,28 @@ const App: React.FC = () => {
 
       {/* Game Rules Modal */}
       {showRules && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[300] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={(e) => { if (e.target === e.currentTarget) { setShowRules(false); if (state.gameStatus === 'playing') setState(prev => ({ ...prev, isPaused: false })); } }}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-4 border-orange-200 animate-in zoom-in duration-300" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-orange-600 text-white px-6 py-4 flex items-center justify-between border-b-4 border-orange-700 z-10">
-              <h2 className="text-2xl font-black uppercase tracking-wider">游戏规则</h2>
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[300] flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => { 
+            setShowRules(false); 
+            if (state.gameStatus === 'playing') setState(prev => ({ ...prev, isPaused: false })); 
+            if (state.gameStatus !== 'playing') setShowHomepage(true);
+          }}
+        >
+          <div 
+            className="bg-white rounded-[2rem] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-4 border-orange-200 animate-in zoom-in duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-orange-600 text-white px-6 py-4 border-b-4 border-orange-700 z-10">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-6 h-6" />
+                <h2 className="text-2xl font-black uppercase tracking-wider">游戏规则</h2>
+              </div>
             </div>
             <div className="p-6 space-y-6 text-stone-800">
               <section>
                 <h3 className="text-xl font-black text-orange-600 mb-3 uppercase">游戏目标</h3>
-                <p className="text-base leading-relaxed">在规定的4分钟内，让店铺赚取最多的钱。但要注意：<strong className="text-red-600">人气值不能降到0%</strong>，否则游戏失败！</p>
+                <p className="text-base leading-relaxed">在规定的5分钟内，让店铺赚取最多的钱。但要注意：<strong className="text-red-600">人气值不能降到0%</strong>，否则游戏失败！</p>
               </section>
 
               <section>
@@ -820,12 +1206,13 @@ const App: React.FC = () => {
                   </li>
                   <li>• <strong>订单数量：</strong>根据人气值动态调整
                     <ul className="ml-4 mt-1 space-y-1">
-                      <li>- 100% 人气：同时最多3个订单</li>
-                      <li>- 75% 人气：同时最多2个订单</li>
-                      <li>- 50% 以下：同时最多1个订单</li>
+                      <li>- 80-100% 人气：同时最多4个订单</li>
+                      <li>- 60-80% 人气：同时最多3个订单</li>
+                      <li>- 40-60% 人气：同时最多2个订单</li>
+                      <li>- 40% 以下：同时最多1个订单</li>
                     </ul>
                   </li>
-                  <li>• <strong>失败条件：</strong>人气值降到0%或余额降到$0</li>
+                  <li>• <strong>失败条件：</strong>人气值降到0%</li>
                 </ul>
               </section>
 
@@ -852,12 +1239,23 @@ const App: React.FC = () => {
               </section>
 
               <section>
+                <h3 className="text-xl font-black text-orange-600 mb-3 uppercase">灶台系统</h3>
+                <ul className="space-y-2 text-base">
+                  <li>• <strong>初始灶台：</strong>游戏开始时拥有2个灶台</li>
+                  <li>• <strong>最大灶台：</strong>最多可扩展至4个灶台</li>
+                  <li>• <strong>安装费用：</strong>安装一个新灶台需要${STOVE_INSTALL_COST}金币</li>
+                  <li>• <strong>安装时间：</strong>安装新灶台需要${STOVE_INSTALL_TIME}秒</li>
+                  <li>• <strong>点击+号：</strong>点击空置灶台位置可以安装新灶台</li>
+                </ul>
+              </section>
+
+              <section>
                 <h3 className="text-xl font-black text-orange-600 mb-3 uppercase">做菜规则</h3>
                 <ul className="space-y-2 text-base">
                   <li>• <strong>点击菜谱卡片：</strong>开始烹饪对应菜品</li>
                   <li>• <strong>食材需求：</strong>必须拥有足够的食材才能开始烹饪</li>
                   <li>• <strong>烹饪时间：</strong>不同菜品需要不同的烹饪时间（秒）</li>
-                  <li>• <strong>灶台数量：</strong>同时最多在2个灶台上烹饪</li>
+                  <li>• <strong>灶台数量：</strong>同时最多在已安装的灶台上烹饪</li>
                   <li>• <strong>取消烹饪：</strong>可以点击X按钮取消，但食材会损耗</li>
                   <li>• <strong>完成烹饪：</strong>如果有对应订单，自动完成并获得收入</li>
                   <li>• <strong>无订单：</strong>如果完成时没有对应订单，菜品浪费</li>
@@ -868,11 +1266,11 @@ const App: React.FC = () => {
               <section>
                 <h3 className="text-xl font-black text-orange-600 mb-3 uppercase">订单规则</h3>
                 <ul className="space-y-2 text-base">
-                  <li>• <strong>订单生成：</strong>随机生成，有时间限制（45-70秒）</li>
+                  <li>• <strong>订单生成：</strong>随机生成，有时间限制（20-50秒）</li>
                   <li>• <strong>订单类型：</strong>普通、博主、挑剔、豪爽四种顾客类型</li>
                   <li>• <strong>完成方式：</strong>烹饪对应菜品后自动完成</li>
-                  <li>• <strong>过期惩罚：</strong>订单过期会扣除人气值</li>
-                  <li>• <strong>紧急提示：</strong>剩余时间少于15秒时，订单会闪烁红色</li>
+                  <li>• <strong>超时处理：</strong>订单时间到后进入紧急催单状态（20秒），每2秒扣1点人气值，超时后订单消失并扣除额外人气值</li>
+                  <li>• <strong>紧急提示：</strong>剩余时间少于15秒或处于催单状态时，订单会闪烁红色</li>
                   <li>• <strong>订单数量：</strong>根据当前人气值动态调整（见人气值系统）</li>
                 </ul>
               </section>

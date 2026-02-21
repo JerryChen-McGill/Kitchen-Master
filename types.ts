@@ -20,6 +20,8 @@ export interface Recipe {
 
 export interface Stove {
   id: number;
+  isInstalled: boolean;
+  installTimeLeft: number; // 安装剩余时间（0表示已完成安装）
   isCooking: boolean;
   dishId: string | null;
   timeRemaining: number;
@@ -34,6 +36,8 @@ export interface Order {
   expiryTime: number;
   maxTime: number; // The initial expiry time
   type: CustomerType;
+  isUrgent: boolean; // Whether the order is in urgent reminder state
+  urgentTimeLeft: number; // Time left in urgent state (20 seconds)
 }
 
 export interface PendingDelivery {
