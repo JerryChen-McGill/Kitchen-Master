@@ -1074,21 +1074,20 @@ const App: React.FC = () => {
                         </button>
                       )
                     ) : stove.isCooking ? (
-                      // 烹饪中 - 三行布局
+                      // 烹饪中 - 四行布局：图标、菜名、时间条、取消按钮
                       <div className="w-full flex flex-col items-center justify-center gap-0.5 animate-in slide-in-from-bottom-1 duration-200 h-full py-0.5">
-                        {/* 第一排：菜品图标和名称 */}
-                        <div className="flex items-center gap-1">
-                          <div className="text-xl shrink-0">{activeRecipe?.icon}</div>
-                          <span className="text-[12px] font-black text-stone-700">{activeRecipe?.name}</span>
-                        </div>
-                        {/* 第二排：进度条和倒计时 */}
+                        {/* 第一排：菜品图标 */}
+                        <div className="text-xl shrink-0">{activeRecipe?.icon}</div>
+                        {/* 第二排：菜名 */}
+                        <span className="text-[11px] font-black text-stone-700">{activeRecipe?.name}</span>
+                        {/* 第三排：进度条和倒计时 */}
                         <div className="w-full flex items-center gap-1 px-1">
                           <div className="flex-1 bg-stone-200 h-1.5 rounded-full overflow-hidden border border-white">
                             <div className="bg-gradient-to-r from-orange-400 to-red-600 h-full" style={{ width: `${stove.progress}%` }} />
                           </div>
-                          <span className="bg-orange-600 text-white px-1 rounded-sm font-black text-[10px] shadow-sm animate-pulse shrink-0">{stove.timeRemaining}s</span>
+                          <span className="bg-orange-600 text-white px-1 rounded-sm font-black text-[9px] shadow-sm animate-pulse shrink-0">{stove.timeRemaining}s</span>
                         </div>
-                        {/* 第三排：关闭按钮 */}
+                        {/* 第四排：关闭按钮 */}
                         <button onClick={() => cancelCooking(stove.id)} disabled={state.isPaused} className={`text-red-400 hover:text-red-600 transition-colors ${state.isPaused ? 'opacity-50 cursor-not-allowed' : ''}`}>
                           <XCircle className="w-3.5 h-3.5" />
                         </button>
