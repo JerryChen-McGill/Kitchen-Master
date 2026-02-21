@@ -38,6 +38,7 @@ export interface Order {
   type: CustomerType;
   isUrgent: boolean; // Whether the order is in urgent reminder state
   urgentTimeLeft: number; // Time left in urgent state (20 seconds)
+  isCooking: boolean; // Whether the order is being cooked
 }
 
 export interface PendingDelivery {

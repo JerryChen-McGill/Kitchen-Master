@@ -243,15 +243,16 @@ const App: React.FC = () => {
     else if (roll < 0.30) type = 'grumpy';
     else if (roll < 0.45) type = 'happy';
     
-    const expiry = 20 + Math.floor(Math.random() * 30); // 20-50秒
+    const expiry = 40 + Math.floor(Math.random() * 40); // 40-80秒
     return {
       id: Math.random().toString(36).substr(2, 9),
       dishId: randomRecipe.id,
       expiryTime: expiry,
-      maxTime: expiry,
+      maxTime: 80, // 统一80秒
       type,
       isUrgent: false,
-      urgentTimeLeft: 0
+      urgentTimeLeft: 0,
+      isCooking: false
     };
   };
 
@@ -335,6 +336,27 @@ const App: React.FC = () => {
     const newStoves = [...state.stoves];
     newStoves[freeStoveIndex] = { ...newStoves[freeStoveIndex], isCooking: true, dishId: recipe.id, timeRemaining: recipe.cookingTime, progress: 0 };
     setState(prev => ({ ...prev, inventory: newInventory, stoves: newStoves }));
+  };
+
+  // 接受订单并开始烹饪
+  const acceptOrder = (order: Order) => {
+    if (state.isPaused) return;
+    
+    const recipe = RECIPES.find(r => r.id === order.dishId);
+    if (!recipe) return;
+
+    // 先标记订单为制作中
+    setState(prev => ({
+      ...prev,
+      activeOrders: prev.activeOrders.map(o => 
+        o.id === order.id ? { ...o, isCooking: true } : o
+      )
+    }));
+
+    // 然后开始烹饪
+    setTimeout(() => {
+      startCooking(recipe);
+    }, 0);
   };
 
   const cancelCooking = (stoveId: number) => {
@@ -442,7 +464,8 @@ const App: React.FC = () => {
         const finalStoves = updatedStoves.map(s => {
           if (s.isCooking && s.timeRemaining === 0) {
             const recipe = RECIPES.find(r => r.id === s.dishId)!;
-            const orderIndex = currentOrders.findIndex(o => o.dishId === recipe.id);
+            // 优先查找标记为制作中的订单
+            const orderIndex = currentOrders.findIndex(o => o.isCooking && o.dishId === recipe.id);
             if (orderIndex !== -1) {
               const order = currentOrders[orderIndex];
               let popGain = 1;
@@ -460,49 +483,24 @@ const App: React.FC = () => {
           return s;
         });
 
-        const expired = currentOrders.filter(o => !o.isUrgent && o.expiryTime <= 1);
+        // 检查订单是否到期
+        const expired = currentOrders.filter(o => o.expiryTime <= 1);
         expired.forEach(o => {
-          // 订单到期，进入紧急催单状态
-          const orderIndex = currentOrders.findIndex(ord => ord.id === o.id);
-          if (orderIndex !== -1) {
-            currentOrders[orderIndex] = { ...currentOrders[orderIndex], isUrgent: true, urgentTimeLeft: 20, expiryTime: 0 };
-            notify("订单超时! 顾客正在催单!", "error");
-          }
+          // 订单彻底过期，扣除人气值
+          let popLoss = 5;
+          if (o.type === 'blogger') { popLoss = 30; }
+          if (o.type === 'grumpy') { popLoss = 20; }
+          newPopularity = Math.max(0, newPopularity - popLoss);
+          notify("订单过期!", "error");
         });
 
-        // 处理紧急催单状态的订单
-        const urgentOrders = currentOrders.filter(o => o.isUrgent);
-        urgentOrders.forEach(o => {
-          const newUrgentTime = o.urgentTimeLeft - 1;
-          const orderIndex = currentOrders.findIndex(ord => ord.id === o.id);
-          
-          if (newUrgentTime <= 0) {
-            // 紧急时间到，订单彻底过期，扣除人气值
-            let popLoss = 5;
-            if (o.type === 'blogger') { popLoss = 30; }
-            if (o.type === 'grumpy') { popLoss = 20; }
-            newPopularity = Math.max(0, newPopularity - popLoss);
-            notify("订单过期!", "error");
-            // 标记为待删除
-            if (orderIndex !== -1) {
-              currentOrders[orderIndex] = { ...currentOrders[orderIndex], urgentTimeLeft: -1 };
-            }
-          } else if (o.urgentTimeLeft % 2 === 0) {
-            // 每过2秒扣1点人气值 (当剩余时间是偶数时)
-            newPopularity = Math.max(0, newPopularity - 1);
-          }
-        });
-
-        // 更新紧急订单的倒计时
+        // 更新所有订单的倒计时
         currentOrders = currentOrders.map(o => {
-          if (o.isUrgent) {
-            return { ...o, urgentTimeLeft: Math.max(-1, o.urgentTimeLeft - 1) };
-          }
           return { ...o, expiryTime: o.expiryTime - 1 };
         });
 
-        // 过滤掉已过期的订单（urgentTimeLeft < 0 或 正常订单 expiryTime <= 0）
-        let remainingOrders = currentOrders.filter(o => (!o.isUrgent && o.expiryTime > 0) || (o.isUrgent && o.urgentTimeLeft >= 0));
+        // 过滤掉已过期的订单（expiryTime <= 0）
+        let remainingOrders = currentOrders.filter(o => o.expiryTime > 0);
         
         // 根据更新后的人气值计算最大订单数
         const maxOrders = getMaxOrders(newPopularity);
@@ -1112,35 +1110,44 @@ const App: React.FC = () => {
             <div className="p-1 space-y-1 flex-1 overflow-y-auto bg-stone-100/10">
               {state.activeOrders.map(order => {
                 const recipe = RECIPES.find(r => r.id === order.dishId)!;
-                const isUrgent = order.isUrgent;
-                const isCritical = !isUrgent && order.expiryTime < 15;
-                const displayTime = isUrgent ? order.urgentTimeLeft : order.expiryTime;
-                const displayMaxTime = isUrgent ? 20 : order.maxTime;
-                const progressWidth = (displayTime / displayMaxTime) * 100;
+                // 最后20秒是催单区间
+                const isUrgent = order.expiryTime <= 20;
+                // 最左边20秒轻微区分 (expiryTime > 60)
+                const isNew = order.expiryTime > 60;
+                // 订单是否正在制作中
+                const isCooking = order.isCooking;
+                const displayTime = order.expiryTime;
+                const maxTime = 80; // 统一80秒
+                const progressWidth = (displayTime / maxTime) * 100;
                 const canCook = Object.entries(recipe.ingredients).every(([ingId, count]) => state.inventory[ingId as IngredientId] >= (count || 0));
                 const hasFreeStove = state.stoves.some(s => s.isInstalled && !s.isCooking);
-                const canStart = canCook && hasFreeStove && !state.isPaused;
+                const canStart = canCook && hasFreeStove && !state.isPaused && !isCooking;
                 return (
-                  <div key={order.id} className={`flex flex-col p-1.5 rounded-lg border transition-all shadow-sm bg-white ${isUrgent ? 'border-red-600 bg-red-50 animate-pulse' : isCritical ? 'border-red-400 animate-pulse' : 'border-stone-50'}`}>
+                  <div key={order.id} className={`flex flex-col p-1.5 rounded-lg border transition-all shadow-sm bg-white ${isUrgent ? 'border-red-600 bg-red-50 animate-pulse' : isNew ? 'border-blue-200 bg-blue-50/50' : 'border-stone-50'}`}>
                     <div className="flex items-center gap-1 mb-1">
                       <div className="text-2xl shrink-0">{recipe.icon}</div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-black text-stone-800 text-[9px] leading-tight truncate">{recipe.name}</div>
+                        <div className="flex items-center gap-1 mb-0.5">
+                          <span className="font-black text-stone-800 text-[9px] leading-tight truncate">{recipe.name}</span>
+                          {isCooking && (
+                            <span className="text-stone-500 bg-stone-100 px-1 rounded shrink-0 text-[7px] font-black">制作中</span>
+                          )}
+                        </div>
                         <div className="flex items-center justify-between text-[7px] font-black uppercase">
-                           <span className={isUrgent || isCritical ? 'text-red-600 font-bold' : 'text-stone-400'}>{isUrgent ? `催单! ${displayTime}s` : `${displayTime}s`}</span>
+                           <span className={isUrgent ? 'text-red-600 font-bold' : isNew ? 'text-blue-500' : 'text-stone-400'}>{isUrgent ? `催单! ${displayTime}s` : `${displayTime}s`}</span>
                            <span className={order.type === 'blogger' ? 'text-purple-500' : 'text-stone-300'}>{order.type === 'blogger' ? '博主' : '普通'}</span>
                         </div>
                       </div>
                       {canStart && (
                         <button 
-                          onClick={() => startCooking(recipe)}
+                          onClick={() => acceptOrder(order)}
                           className="ml-1 px-2 py-0.5 bg-green-500 hover:bg-green-600 text-white text-[8px] font-black rounded shadow-sm active:scale-95 transition-transform"
                         >
                           好嘞
                         </button>
                       )}
                     </div>
-                    <div className="w-full bg-stone-100 h-1 rounded-full overflow-hidden"><div className={`h-full transition-all duration-1000 ease-linear ${isUrgent ? 'bg-red-600 animate-pulse' : isCritical ? 'bg-red-500' : 'bg-orange-400'}`} style={{ width: `${progressWidth}%` }} /></div>
+                    <div className="w-full bg-stone-100 h-1 rounded-full overflow-hidden"><div className={`h-full transition-all duration-1000 ease-linear ${isUrgent ? 'bg-red-600 animate-pulse' : isNew ? 'bg-blue-400' : 'bg-orange-400'}`} style={{ width: `${progressWidth}%` }} /></div>
                   </div>
                 );
               })}
