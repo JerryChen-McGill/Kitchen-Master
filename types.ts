@@ -23,7 +23,9 @@ export interface Stove {
   isInstalled: boolean;
   installTimeLeft: number; // 安装剩余时间（0表示已完成安装）
   isCooking: boolean;
+  isDone: boolean; // 菜品已完成但未上菜
   dishId: string | null;
+  orderId: string | null; // 关联的订单ID，如果有订单则为订单ID，否则为null（从菜单直接制作）
   timeRemaining: number;
   progress: number;
 }

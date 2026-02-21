@@ -57,7 +57,9 @@ const createStoves = (): Stove[] => {
     isInstalled: i < INITIAL_STOVES, // 前2个灶台默认已安装
     installTimeLeft: 0,
     isCooking: false,
+    isDone: false,
     dishId: null,
+    orderId: null,
     timeRemaining: 0,
     progress: 0
   }));
@@ -314,7 +316,7 @@ const App: React.FC = () => {
     notify(`卖出 ${item.name} +$${sellPrice}`, 'success');
   };
 
-  const startCooking = (recipe: Recipe) => {
+  const startCooking = (recipe: Recipe, orderId: string | null = null) => {
     if (state.isPaused) return;
     
     const missing = Object.entries(recipe.ingredients)
@@ -327,14 +329,14 @@ const App: React.FC = () => {
       return;
     }
 
-    const freeStoveIndex = state.stoves.findIndex(s => s.isInstalled && !s.isCooking);
+    const freeStoveIndex = state.stoves.findIndex(s => s.isInstalled && !s.isCooking && !s.isDone);
     if (freeStoveIndex === -1) return notify("没有可用的灶台!", 'error');
 
     playSfx(sfxCook.current);
     const newInventory = { ...state.inventory };
     Object.entries(recipe.ingredients).forEach(([ingId, count]) => { newInventory[ingId as IngredientId] -= (count || 0); });
     const newStoves = [...state.stoves];
-    newStoves[freeStoveIndex] = { ...newStoves[freeStoveIndex], isCooking: true, dishId: recipe.id, timeRemaining: recipe.cookingTime, progress: 0 };
+    newStoves[freeStoveIndex] = { ...newStoves[freeStoveIndex], isCooking: true, dishId: recipe.id, orderId, timeRemaining: recipe.cookingTime, progress: 0 };
     setState(prev => ({ ...prev, inventory: newInventory, stoves: newStoves }));
   };
 
@@ -353,9 +355,9 @@ const App: React.FC = () => {
       )
     }));
 
-    // 然后开始烹饪
+    // 然后开始烹饪，传递订单ID
     setTimeout(() => {
-      startCooking(recipe);
+      startCooking(recipe, order.id);
     }, 0);
   };
 
@@ -365,11 +367,72 @@ const App: React.FC = () => {
     playSfx(sfxClick.current);
     const newStoves = state.stoves.map(s => {
       if (s.id === stoveId && s.isCooking) {
-        return { ...s, isCooking: false, dishId: null, progress: 0, timeRemaining: 0 };
+        return { ...s, isCooking: false, dishId: null, orderId: null, progress: 0, timeRemaining: 0 };
       }
       return s;
     });
     setState(prev => ({ ...prev, stoves: newStoves }));
+  };
+
+  // 丢弃已做好的菜品
+  const discardDish = (stoveId: number) => {
+    if (state.isPaused) return;
+    
+    playSfx(sfxClick.current);
+    const newStoves = state.stoves.map(s => {
+      if (s.id === stoveId && s.isDone) {
+        return { ...s, isDone: false, dishId: null, orderId: null, progress: 0 };
+      }
+      return s;
+    });
+    setState(prev => ({ ...prev, stoves: newStoves }));
+    notify("菜品已丢弃", 'neutral');
+  };
+
+  // 上菜 - 用灶台上的菜品完成订单
+  const serveDish = (orderId: string) => {
+    if (state.isPaused) return;
+    
+    const order = state.activeOrders.find(o => o.id === orderId);
+    if (!order) return;
+    
+    const recipe = RECIPES.find(r => r.id === order.dishId);
+    if (!recipe) return;
+    
+    // 查找灶台上是否有对应的已做好的菜品
+    const stoveIndex = state.stoves.findIndex(s => s.isDone && s.dishId === order.dishId);
+    if (stoveIndex === -1) {
+      notify("灶台上没有对应的菜品!", 'error');
+      return;
+    }
+    
+    // 清除灶台上的菜品
+    const newStoves = state.stoves.map((s, i) => {
+      if (i === stoveIndex) {
+        return { ...s, isDone: false, dishId: null, orderId: null, progress: 0 };
+      }
+      return s;
+    });
+    
+    // 计算收益
+    let popGain = 1;
+    let tip = 0;
+    if (order.type === 'blogger') { popGain = 15; }
+    if (order.type === 'happy') { popGain = 10; tip = 20; }
+    
+    // 移除订单
+    const newOrders = state.activeOrders.filter(o => o.id !== orderId);
+    
+    playSfx(sfxSuccess.current);
+    setState(prev => ({
+      ...prev,
+      stoves: newStoves,
+      activeOrders: newOrders,
+      money: prev.money + recipe.salePrice + tip,
+      totalRevenue: prev.totalRevenue + recipe.salePrice + tip,
+      popularity: Math.min(100, prev.popularity + popGain)
+    }));
+    notify(`上菜: ${recipe.name}! +$${recipe.salePrice + tip}`, 'success');
   };
 
   // 安装新灶台
@@ -464,21 +527,29 @@ const App: React.FC = () => {
         const finalStoves = updatedStoves.map(s => {
           if (s.isCooking && s.timeRemaining === 0) {
             const recipe = RECIPES.find(r => r.id === s.dishId)!;
-            // 优先查找标记为制作中的订单
-            const orderIndex = currentOrders.findIndex(o => o.isCooking && o.dishId === recipe.id);
-            if (orderIndex !== -1) {
-              const order = currentOrders[orderIndex];
-              let popGain = 1;
-              let tip = 0;
-              if (order.type === 'blogger') { popGain = 15; }
-              if (order.type === 'happy') { popGain = 10; tip = 20; }
-              newRevenue += recipe.salePrice + tip;
-              currentMoney += recipe.salePrice + tip;
-              newPopularity = Math.min(100, newPopularity + popGain);
-              currentOrders.splice(orderIndex, 1);
-              notify(`卖出: ${recipe.name}!`, 'success');
+            
+            // 如果有关联的订单ID，尝试自动完成订单
+            if (s.orderId) {
+              const orderIndex = currentOrders.findIndex(o => o.id === s.orderId);
+              if (orderIndex !== -1) {
+                // 订单还存在，自动完成
+                const order = currentOrders[orderIndex];
+                let popGain = 1;
+                let tip = 0;
+                if (order.type === 'blogger') { popGain = 15; }
+                if (order.type === 'happy') { popGain = 10; tip = 20; }
+                newRevenue += recipe.salePrice + tip;
+                currentMoney += recipe.salePrice + tip;
+                newPopularity = Math.min(100, newPopularity + popGain);
+                currentOrders.splice(orderIndex, 1);
+                notify(`卖出: ${recipe.name}!`, 'success');
+                return { ...s, isCooking: false, dishId: null, orderId: null, progress: 0 };
+              }
+              // 订单已过期，灶台上的菜保留，需要手动上菜
             }
-            return { ...s, isCooking: false, dishId: null, progress: 0 };
+            
+            // 从菜单直接点击制作的菜，或者关联的订单已过期，保留在灶台
+            return { ...s, isCooking: false, isDone: true, progress: 100 };
           }
           return s;
         });
@@ -1090,6 +1161,25 @@ const App: React.FC = () => {
                           <XCircle className="w-3.5 h-3.5" />
                         </button>
                       </div>
+                    ) : stove.isDone ? (
+                      // 已做好 - 显示菜品和上菜/丢弃按钮
+                      <div className="w-full flex flex-col items-center justify-center gap-0.5 h-full py-0.5">
+                        {/* 菜品图标 */}
+                        <div className="text-xl shrink-0 relative">
+                          {activeRecipe?.icon}
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+                            <span className="text-[8px]">✓</span>
+                          </div>
+                        </div>
+                        {/* 菜名 */}
+                        <span className="text-[11px] font-black text-green-700">{activeRecipe?.name}</span>
+                        {/* 已做好标签 */}
+                        <span className="text-[9px] font-black text-green-600 bg-green-100 px-1.5 rounded">已做好</span>
+                        {/* 丢弃按钮 */}
+                        <button onClick={() => discardDish(stove.id)} disabled={state.isPaused} className={`text-stone-400 hover:text-red-500 transition-colors ${state.isPaused ? 'opacity-50 cursor-not-allowed' : ''}`} title="丢弃菜品">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     ) : (
                       // 空闲灶台
                       <div className="w-full text-center opacity-15 text-[17px] font-black uppercase tracking-widest flex items-center justify-center gap-1"><Flame className="w-3 h-3" /> 灶台</div>
@@ -1120,8 +1210,11 @@ const App: React.FC = () => {
                 const maxTime = 80; // 统一80秒
                 const progressWidth = (displayTime / maxTime) * 100;
                 const canCook = Object.entries(recipe.ingredients).every(([ingId, count]) => state.inventory[ingId as IngredientId] >= (count || 0));
-                const hasFreeStove = state.stoves.some(s => s.isInstalled && !s.isCooking);
+                const hasFreeStove = state.stoves.some(s => s.isInstalled && !s.isCooking && !s.isDone);
                 const canStart = canCook && hasFreeStove && !state.isPaused && !isCooking;
+                // 检查灶台上是否有对应的已做好的菜品
+                const hasReadyDish = state.stoves.some(s => s.isDone && s.dishId === order.dishId);
+                const canServe = hasReadyDish && !state.isPaused;
                 return (
                   <div key={order.id} className={`flex flex-col p-1.5 rounded-lg border transition-all shadow-sm bg-white ${isUrgent ? 'border-red-600 bg-red-50 animate-pulse' : isNew ? 'border-blue-200 bg-blue-50/50' : 'border-stone-50'}`}>
                     <div className="flex items-center gap-1 mb-1">
@@ -1138,7 +1231,14 @@ const App: React.FC = () => {
                            <span className={order.type === 'blogger' ? 'text-purple-500' : 'text-stone-300'}>{order.type === 'blogger' ? '博主' : '普通'}</span>
                         </div>
                       </div>
-                      {canStart && (
+                      {canServe ? (
+                        <button 
+                          onClick={() => serveDish(order.id)}
+                          className="ml-1 px-2 py-0.5 bg-blue-500 hover:bg-blue-600 text-white text-[8px] font-black rounded shadow-sm active:scale-95 transition-transform animate-pulse"
+                        >
+                          上菜
+                        </button>
+                      ) : canStart && (
                         <button 
                           onClick={() => acceptOrder(order)}
                           className="ml-1 px-2 py-0.5 bg-green-500 hover:bg-green-600 text-white text-[8px] font-black rounded shadow-sm active:scale-95 transition-transform"
