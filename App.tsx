@@ -25,13 +25,13 @@ const saveToLeaderboard = (name: string, score: number, popularity: number) => {
   const leaderboard = getLeaderboard();
   leaderboard.push({ name, score, popularity, date: new Date().toLocaleDateString() });
   leaderboard.sort((a, b) => b.score - a.score);
-  const top10 = leaderboard.slice(0, 10);
-  localStorage.setItem('kitchenMaster_leaderboard', JSON.stringify(top10));
+  const top6 = leaderboard.slice(0, 6);
+  localStorage.setItem('kitchenMaster_leaderboard', JSON.stringify(top6));
 };
 
 const isLeaderboardQualified = (score: number): boolean => {
   const leaderboard = getLeaderboard();
-  if (leaderboard.length < 10) return true;
+  if (leaderboard.length < 6) return true;
   return score > leaderboard[leaderboard.length - 1].score;
 };
 
@@ -565,12 +565,6 @@ const App: React.FC = () => {
               >
                 <Trophy className="w-5 h-5" /> 排行榜
               </button>
-              <button 
-                onClick={() => { setShowHomepage(false); setShowHighScore(true); }}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-black py-3 rounded-xl text-lg shadow-md active:scale-95 transition-transform flex items-center justify-center gap-2"
-              >
-                <Star className="w-5 h-5" /> 我的分数
-              </button>
             </div>
           </div>
         </div>
@@ -996,7 +990,7 @@ const App: React.FC = () => {
         {/* Menu & Kitchen Section (Center) */}
         <div className="col-span-6 flex flex-col gap-1 overflow-hidden">
           {/* Menu Section */}
-          <section className="h-[75%] bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden flex flex-col">
+          <section className="h-[72%] bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden flex flex-col">
             <div className="bg-stone-700 px-2 py-1 flex items-center justify-between text-white shrink-0">
               <div className="flex items-center gap-1"><TrendingUp className="w-3 h-3 text-orange-300" /><h2 className="text-[13px] font-black uppercase tracking-wider truncate">菜单</h2></div>
             </div>
@@ -1034,7 +1028,7 @@ const App: React.FC = () => {
           </section>
 
           {/* Cooking Section */}
-          <section className="h-[25%] bg-white rounded-xl shadow-sm border border-stone-200 flex flex-col overflow-hidden p-1">
+          <section className="h-[28%] bg-white rounded-xl shadow-sm border border-stone-200 flex flex-col overflow-hidden p-1">
             <div className="flex-1 flex gap-1">
               {state.stoves.map(stove => {
                 const activeRecipe = RECIPES.find(r => r.id === stove.dishId);
@@ -1062,24 +1056,21 @@ const App: React.FC = () => {
                           </div>
                         </div>
                       ) : (
-                        // 未安装 - 显示+号和价格
+                        // 未安装 - 三行文字均匀居中
                         <button 
                           onClick={() => installStove(stove.id)}
                           disabled={state.isPaused || state.money < STOVE_INSTALL_COST}
-                          className={`w-full h-full flex flex-col items-center justify-center gap-0.5 transition-all ${
+                          className={`w-full h-full flex flex-col items-center justify-center gap-1 transition-all ${
                             state.money >= STOVE_INSTALL_COST && !state.isPaused
                               ? 'cursor-pointer hover:bg-orange-50 active:scale-95' 
                               : 'opacity-50 cursor-not-allowed'
                           }`}
                         >
-                          <div className="text-2xl font-black text-stone-300">+</div>
-                          <div className="flex flex-col items-center">
-                            <span className="text-[10px] font-bold text-stone-400 uppercase">安装灶台</span>
-                            <span className={`text-[10px] font-black ${state.money >= STOVE_INSTALL_COST ? 'text-green-600' : 'text-red-500'}`}>
-                              ${STOVE_INSTALL_COST}
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-stone-400 font-medium">⏱{STOVE_INSTALL_TIME}秒</span>
+                          <span className="text-[12px] font-bold text-stone-400 uppercase">安装灶台</span>
+                          <span className={`text-[12px] font-black ${state.money >= STOVE_INSTALL_COST ? 'text-green-600' : 'text-red-500'}`}>
+                            ${STOVE_INSTALL_COST}
+                          </span>
+                          <span className="text-[12px] text-stone-400 font-medium">⏱{STOVE_INSTALL_TIME}秒</span>
                         </button>
                       )
                     ) : stove.isCooking ? (
@@ -1088,14 +1079,14 @@ const App: React.FC = () => {
                         {/* 第一排：菜品图标和名称 */}
                         <div className="flex items-center gap-1">
                           <div className="text-xl shrink-0">{activeRecipe?.icon}</div>
-                          <span className="text-[9px] font-black text-stone-700">{activeRecipe?.name}</span>
+                          <span className="text-[12px] font-black text-stone-700">{activeRecipe?.name}</span>
                         </div>
                         {/* 第二排：进度条和倒计时 */}
                         <div className="w-full flex items-center gap-1 px-1">
                           <div className="flex-1 bg-stone-200 h-1.5 rounded-full overflow-hidden border border-white">
                             <div className="bg-gradient-to-r from-orange-400 to-red-600 h-full" style={{ width: `${stove.progress}%` }} />
                           </div>
-                          <span className="bg-orange-600 text-white px-1 rounded-sm font-black text-[7px] shadow-sm animate-pulse shrink-0">{stove.timeRemaining}s</span>
+                          <span className="bg-orange-600 text-white px-1 rounded-sm font-black text-[10px] shadow-sm animate-pulse shrink-0">{stove.timeRemaining}s</span>
                         </div>
                         {/* 第三排：关闭按钮 */}
                         <button onClick={() => cancelCooking(stove.id)} disabled={state.isPaused} className={`text-red-400 hover:text-red-600 transition-colors ${state.isPaused ? 'opacity-50 cursor-not-allowed' : ''}`}>
@@ -1104,7 +1095,7 @@ const App: React.FC = () => {
                       </div>
                     ) : (
                       // 空闲灶台
-                      <div className="w-full text-center opacity-15 text-[14px] font-black uppercase tracking-widest flex items-center justify-center gap-1"><Flame className="w-3 h-3" /> 灶台</div>
+                      <div className="w-full text-center opacity-15 text-[17px] font-black uppercase tracking-widest flex items-center justify-center gap-1"><Flame className="w-3 h-3" /> 灶台</div>
                     )}
                   </div>
                 );
