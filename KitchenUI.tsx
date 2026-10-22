@@ -47,10 +47,10 @@ export function DeliveryClock({ deliveries, duration }: { deliveries: PendingDel
   </span>;
 }
 
-export function StockShelf({ ingredient, count, disabled, flashing, onSell }: {
-  ingredient: Ingredient; count: number; disabled: boolean; flashing: boolean; onSell: () => void;
+export function StockShelf({ ingredient, count, disabled, onSell }: {
+  ingredient: Ingredient; count: number; disabled: boolean; onSell: () => void;
 }) {
-  return <button type="button" className={`stock-shelf ${flashing ? 'animate-flash-red' : ''}`}
+  return <button type="button" className="stock-shelf"
     onClick={onSell} disabled={disabled || count === 0}
     aria-label={`${ingredient.name} 库存 ${count}，点击半价卖出一件`} title={`${ingredient.name} ×${count} · 点击半价卖出一件`}>
     <span className="stock-count">×{count}</span>
@@ -65,13 +65,16 @@ export function StockShelf({ ingredient, count, disabled, flashing, onSell }: {
   </button>;
 }
 
-export function RecipeCard({ recipe, inventory, hasOrder, paused, onCook }: {
-  recipe: Recipe; inventory: Record<IngredientId, number>; hasOrder: boolean; paused: boolean; onCook: () => void;
+export function RecipeCard({ recipe, inventory, hasOrder, paused, onCook, onInspect }: {
+  recipe: Recipe; inventory: Record<IngredientId, number>; hasOrder: boolean; paused: boolean; onCook: () => void; onInspect: () => void;
 }) {
   const [flipped, setFlipped] = useState(false);
   const enough = Object.entries(recipe.ingredients).every(([id, count]) => inventory[id as IngredientId] >= (count || 0));
   return <article className={`recipe-card ${flipped ? 'is-flipped' : ''}`} data-recipe={recipe.id}>
-    <button type="button" className="recipe-flip" onClick={() => setFlipped(value => !value)}
+    <button type="button" className="recipe-flip" onClick={() => {
+      setFlipped(value => !value);
+      onInspect();
+    }}
       aria-label={`${recipe.name}：${flipped ? '返回正面' : '查看食材和烹饪时间'}`} aria-pressed={flipped}
       title="点击翻面" disabled={paused}>
       <span className="recipe-turn">
@@ -92,7 +95,7 @@ export function RecipeCard({ recipe, inventory, hasOrder, paused, onCook }: {
         </span>
       </span>
     </button>
-    <CookButton hasIngredients={enough} hasOrder={hasOrder} disabled={paused || !enough}
-      onClick={onCook} title={paused ? '游戏已暂停' : !enough ? '食材不足' : hasOrder ? '有订单需要这道菜' : '开始烹饪'} />
+    <CookButton hasIngredients={enough} hasOrder={hasOrder} disabled={paused}
+      onClick={onCook} title={paused ? '游戏已暂停' : !enough ? '食材不足，点击查看缺少的食材' : hasOrder ? '有订单需要这道菜' : '开始烹饪'} />
   </article>;
 }

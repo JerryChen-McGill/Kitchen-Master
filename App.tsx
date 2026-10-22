@@ -100,8 +100,14 @@ const App: React.FC = () => {
 
   const [notification, setNotification] = useState<{msg: string, type: 'success' | 'error' | 'neutral'} | null>(null);
   const [isMuted, setIsMuted] = useState(false);
-  const [flashingIngredients, setFlashingIngredients] = useState<IngredientId[]>([]);
+  const [ingredientHint, setIngredientHint] = useState<{ ids: IngredientId[]; sequence: number }>({ ids: [], sequence: 0 });
   const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (ingredientHint.ids.length === 0) return;
+    const timeout = window.setTimeout(() => setIngredientHint(hint => ({ ...hint, ids: [] })), 1000);
+    return () => window.clearTimeout(timeout);
+  }, [ingredientHint]);
   
   const bgmRef = useRef<HTMLAudioElement | null>(null);
   const sfxBuy = useRef<HTMLAudioElement | null>(null);
@@ -188,6 +194,7 @@ const App: React.FC = () => {
   };
 
   const startGame = () => {
+    setIngredientHint(hint => ({ ...hint, ids: [] }));
     playSfx(sfxClick.current);
     bgmRef.current?.play().catch(() => {});
     setState({
@@ -245,18 +252,17 @@ const App: React.FC = () => {
     notify(`卖出 ${item.name} +$${sellPrice}`, 'success');
   };
 
-  const startCooking = (recipe: Recipe, orderId: string | null = null) => {
-    if (state.isPaused) return;
-    
+  const highlightMissingIngredients = (recipe: Recipe): boolean => {
+    if (state.isPaused) return false;
     const missing = Object.entries(recipe.ingredients)
       .filter(([ingId, count]) => state.inventory[ingId as IngredientId] < (count || 0))
       .map(([ingId]) => ingId as IngredientId);
+    setIngredientHint(hint => ({ ids: missing, sequence: hint.sequence + 1 }));
+    return missing.length > 0;
+  };
 
-    if (missing.length > 0) {
-      setFlashingIngredients(missing);
-      setTimeout(() => setFlashingIngredients([]), 1500);
-      return;
-    }
+  const startCooking = (recipe: Recipe, orderId: string | null = null) => {
+    if (state.isPaused || highlightMissingIngredients(recipe)) return;
 
     const freeStoveIndex = state.stoves.findIndex(s => s.isInstalled && !s.isCooking && !s.isDone);
     if (freeStoveIndex === -1) return notify("没有可用的灶台!", 'error');
@@ -266,28 +272,20 @@ const App: React.FC = () => {
     Object.entries(recipe.ingredients).forEach(([ingId, count]) => { newInventory[ingId as IngredientId] -= (count || 0); });
     const newStoves = [...state.stoves];
     newStoves[freeStoveIndex] = { ...newStoves[freeStoveIndex], isCooking: true, dishId: recipe.id, orderId, timeRemaining: recipe.cookingTime, progress: 0 };
-    setState(prev => ({ ...prev, inventory: newInventory, stoves: newStoves }));
+    setState(prev => ({
+      ...prev, inventory: newInventory, stoves: newStoves,
+      activeOrders: prev.activeOrders.map(order => order.id === orderId ? { ...order, isCooking: true } : order),
+    }));
   };
 
   // 接受订单并开始烹饪
   const acceptOrder = (order: Order) => {
-    if (state.isPaused) return;
+    if (state.isPaused || order.isCooking) return;
     
     const recipe = RECIPES.find(r => r.id === order.dishId);
     if (!recipe) return;
 
-    // 先标记订单为制作中
-    setState(prev => ({
-      ...prev,
-      activeOrders: prev.activeOrders.map(o => 
-        o.id === order.id ? { ...o, isCooking: true } : o
-      )
-    }));
-
-    // 然后开始烹饪，传递订单ID
-    setTimeout(() => {
-      startCooking(recipe, order.id);
-    }, 0);
+    startCooking(recipe, order.id);
   };
 
   const cancelCooking = (stoveId: number) => {
@@ -755,9 +753,11 @@ const App: React.FC = () => {
                   <span className="supply-icon" aria-hidden="true">{ing.icon}</span>
                   <span className="supply-label"><strong>{ing.name}</strong><b>${ing.price}</b></span>
                   <DeliveryClock deliveries={pending} duration={ing.deliveryTime} />
+                  {ingredientHint.ids.includes(id) && <span key={ingredientHint.sequence}
+                    className="ingredient-shortage-hint" aria-hidden="true" />}
                 </button>
                 <StockShelf ingredient={ing} count={state.inventory[id]} disabled={state.isPaused}
-                  flashing={flashingIngredients.includes(id)} onSell={() => sellIngredient(id)} />
+                  onSell={() => sellIngredient(id)} />
               </div>;
             })}
           </div>
@@ -802,7 +802,8 @@ const App: React.FC = () => {
               {sortedRecipes.map(recipe => (
                 <RecipeCard key={recipe.id} recipe={recipe} inventory={state.inventory}
                   hasOrder={state.activeOrders.some(order => order.dishId === recipe.id)}
-                  paused={state.isPaused} onCook={() => startCooking(recipe)} />
+                  paused={state.isPaused} onCook={() => startCooking(recipe)}
+                  onInspect={() => highlightMissingIngredients(recipe)} />
               ))}
             </div>
           </section>
@@ -922,26 +923,29 @@ const App: React.FC = () => {
                 const progressWidth = (displayTime / maxTime) * 100;
                 const canCook = Object.entries(recipe.ingredients).every(([ingId, count]) => state.inventory[ingId as IngredientId] >= (count || 0));
                 const hasFreeStove = state.stoves.some(s => s.isInstalled && !s.isCooking && !s.isDone);
-                const canStart = canCook && hasFreeStove && !state.isPaused && !isCooking;
+                const canAttemptCooking = !state.isPaused && !isCooking && (!canCook || hasFreeStove);
                 // 检查灶台上是否有对应的已做好的菜品
                 const hasReadyDish = state.stoves.some(s => s.isDone && s.dishId === order.dishId);
                 const canServe = hasReadyDish && !state.isPaused;
                 return (
                   <div key={order.id} className={`order-ticket flex flex-col p-1.5 rounded-lg border transition-all shadow-sm ${isUrgent ? 'border-red-600 bg-red-50 animate-pulse' : isNew ? 'border-blue-200 bg-blue-50/50' : 'border-stone-50'}`}>
                     <div className="flex items-center gap-1 mb-1">
-                      <div className="text-2xl shrink-0"><DishArtwork icon={recipe.icon} /></div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1 mb-0.5">
-                          <span className="font-black text-stone-800 text-[9px] leading-tight truncate">{recipe.name}</span>
-                          {isCooking && (
-                            <span className="text-stone-500 bg-stone-100 px-1 rounded shrink-0 text-[7px] font-black">制作中</span>
-                          )}
+                      <button type="button" className="order-dish" disabled={state.isPaused}
+                        onClick={() => highlightMissingIngredients(recipe)} aria-label={`${recipe.name}：检查缺少的食材`}>
+                        <div className="text-2xl shrink-0"><DishArtwork icon={recipe.icon} /></div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <span className="font-black text-stone-800 text-[9px] leading-tight truncate">{recipe.name}</span>
+                            {isCooking && (
+                              <span className="text-stone-500 bg-stone-100 px-1 rounded shrink-0 text-[7px] font-black">制作中</span>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between text-[7px] font-black uppercase">
+                             <span className={isUrgent ? 'text-red-600 font-bold' : isNew ? 'text-blue-500' : 'text-stone-400'}>{isUrgent ? `催单! ${displayTime}s` : `${displayTime}s`}</span>
+                             <span className={order.type === 'blogger' ? 'text-purple-500' : 'text-stone-300'}>{order.type === 'blogger' ? '博主' : '普通'}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center justify-between text-[7px] font-black uppercase">
-                           <span className={isUrgent ? 'text-red-600 font-bold' : isNew ? 'text-blue-500' : 'text-stone-400'}>{isUrgent ? `催单! ${displayTime}s` : `${displayTime}s`}</span>
-                           <span className={order.type === 'blogger' ? 'text-purple-500' : 'text-stone-300'}>{order.type === 'blogger' ? '博主' : '普通'}</span>
-                        </div>
-                      </div>
+                      </button>
                       {hasReadyDish ? (
                         <button type="button" disabled={!canServe}
                           onClick={() => serveDish(order.id)}
@@ -951,9 +955,9 @@ const App: React.FC = () => {
                           <Utensils aria-hidden="true" /><span>上菜</span>
                         </button>
                       ) : (
-                        <CookButton hasIngredients={canCook} hasOrder={true} disabled={!canStart}
+                        <CookButton hasIngredients={canCook} hasOrder={true} disabled={!canAttemptCooking}
                           onClick={() => acceptOrder(order)} label={isCooking ? '制作中' : '烹饪'}
-                          title={state.isPaused ? '游戏已暂停' : isCooking ? '正在制作' : !canCook ? '食材不足' : !hasFreeStove ? '没有可用的灶台' : '接受订单并烹饪'} />
+                          title={state.isPaused ? '游戏已暂停' : isCooking ? '正在制作' : !canCook ? '食材不足，点击查看缺少的食材' : !hasFreeStove ? '没有可用的灶台' : '接受订单并烹饪'} />
                       )}
                     </div>
                     <div className="w-full bg-stone-100 h-1 rounded-full overflow-hidden"><div className={`h-full transition-all duration-1000 ease-linear ${isUrgent ? 'bg-red-600 animate-pulse' : isNew ? 'bg-blue-400' : 'bg-orange-400'}`} style={{ width: `${progressWidth}%` }} /></div>

@@ -29,6 +29,9 @@
 .supply-line:last-child .supply-buy { border-bottom: 2px solid var(--edge); border-radius: 0 0 15px 12px; }
 .supply-buy:hover:not(:disabled) { background: #fff9e6; }
 .supply-buy:disabled .supply-label, .supply-buy:disabled .supply-icon, .supply-buy:disabled .supply-add { opacity: .5; }
+.supply-buy { position: relative; }
+.ingredient-shortage-hint { position: absolute; inset: 0; pointer-events: none; border: 3px solid #e05232; border-radius: inherit; background: #ffb34d30; box-shadow: inset 0 0 0 2px #fff1c9; animation: ingredient-shortage 1s ease-out forwards; }
+@keyframes ingredient-shortage { 0%, 55% { opacity: 1; } 100% { opacity: 0; } }
 .supply-icon { font-size: clamp(24px, 3vw, 45px); line-height: 1; }
 .supply-label { display: flex; flex-direction: column; flex: 1; min-width: 0; font-size: clamp(12px, 1.5vw, 19px); line-height: 1.25; white-space: nowrap; }
 .supply-add { display: flex; align-items: center; justify-content: center; border-radius: 7px; border: 2px solid #6c9257; color: white; background: #8dbb6c; box-shadow: inset 0 2px #c2dda7; width: 27px; height: 27px; flex-shrink: 0; }
@@ -113,7 +116,8 @@
 .order-ticket { position: relative; background: linear-gradient(110deg, #fff5c6, #ffe6a1); border: 2px solid #a5774e; border-radius: 4px 4px 24px 4px; padding: 17px 10px 15px; box-shadow: 2px 4px #8c5c3640; flex-shrink: 0; }
 .order-ticket::before { content: ''; position: absolute; width: 15px; height: 19px; border-radius: 50%; border: 2px solid #ac493b; background: #ed7260; box-shadow: 1px 3px #ad6c4155; top: -11px; left: calc(50% - 8px); transform: rotate(20deg); }
 .order-ticket > div:first-child { flex-wrap: wrap; gap: 6px; }
-.order-ticket > div:first-child > .text-2xl { font-size: clamp(26px, 3.2vw, 44px); }
+.order-dish { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; text-align: left; border-radius: 6px; }
+.order-dish > .text-2xl { font-size: clamp(26px, 3.2vw, 44px); }
 .order-ticket .text-\[9px\] { font-size: clamp(12px, 1.3vw, 18px); color: #68402c; }
 .order-ticket .text-\[7px\] { font-size: 10px; }
 .order-ticket .cook-button { margin-left: auto; }
@@ -121,8 +125,6 @@
 .order-ticket.border-red-600 { border-color: #c45138; }
 .game-paused .clock-hand, .game-paused .clock-progress { animation-play-state: paused; }
 .game-paused main button { filter: grayscale(.65); }
-@keyframes flash-red { 0%, 100% { background-color: #fee2e2; } 50% { background-color: #f87171; } }
-.animate-flash-red { animation: flash-red .5s ease-in-out 3; }
 @media (min-width: 1200px) and (min-height: 700px) {
   .kitchen-layout { padding-top: 26px; padding-bottom: 35px; gap: 22px; }
   .recipe-grid { gap: 12px; }
@@ -204,5 +206,5 @@
 @media (prefers-reduced-motion: reduce) {
   .recipe-turn { transition: none; }
   .clock-hand, .clock-progress { animation: none; }
-  .kitchen-game .animate-pulse, .animate-flash-red { animation: none; }
+  .kitchen-game .animate-pulse, .ingredient-shortage-hint { animation: none; }
 }
