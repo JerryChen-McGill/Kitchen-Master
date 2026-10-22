@@ -68,3 +68,7 @@ export const RECIPES: Recipe[] = [
     icon: '🥩🍟'
   }
 ];
+
+export const getRecipeProfit = (recipe: Recipe): number => recipe.salePrice -
+  Object.entries(recipe.ingredients).reduce((cost, [id, count]) =>
+    cost + INGREDIENTS[id as IngredientId].price * (count ?? 0), 0);

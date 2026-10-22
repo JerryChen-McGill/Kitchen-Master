@@ -5,9 +5,9 @@ import './kitchen.css';
 import { 
   ShoppingCart, Flame, Clock, DollarSign, Package, Play, 
   RotateCcw, AlertCircle, Heart, TrendingUp, TrendingDown, 
-  Truck, Star, Volume2, VolumeX, XCircle, Trash2, Skull, Trophy, User
+  Truck, Star, Volume2, VolumeX, XCircle, Trash2, Skull, Trophy, User, ArrowDownWideNarrow, Check, Utensils
 } from 'lucide-react';
-import { INGREDIENTS, RECIPES, INITIAL_MONEY, GAME_DURATION, STOVE_COUNT, INITIAL_STOVES, STOVE_INSTALL_COST, STOVE_INSTALL_TIME } from './constants';
+import { INGREDIENTS, RECIPES, getRecipeProfit, INITIAL_MONEY, GAME_DURATION, STOVE_COUNT, INITIAL_STOVES, STOVE_INSTALL_COST, STOVE_INSTALL_TIME } from './constants';
 import { IngredientId, GameState, Recipe, Order, Stove, PendingDelivery, CustomerType } from './types';
 
 // 排行榜相关函数
@@ -82,6 +82,14 @@ const App: React.FC = () => {
   });
   
   const [showRules, setShowRules] = useState(false);
+  const [recipeSort, setRecipeSort] = useState<'cookingTime' | 'salePrice' | 'profit'>('salePrice');
+  const recipeSortOptions = [
+    { value: 'cookingTime', label: '制作时长' },
+    { value: 'salePrice', label: '售价' },
+    { value: 'profit', label: '利润' },
+  ] as const;
+  const recipeSortValue = (recipe: Recipe) => recipeSort === 'profit' ? getRecipeProfit(recipe) : recipe[recipeSort];
+  const sortedRecipes = [...RECIPES].sort((a, b) => recipeSortValue(a) - recipeSortValue(b));
   const [showHomepage, setShowHomepage] = useState(true);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showHighScore, setShowHighScore] = useState(false);
@@ -762,9 +770,36 @@ const App: React.FC = () => {
           <section className="menu-board">
             <div className="bg-stone-700 px-2 py-1 flex items-center justify-between text-white shrink-0">
               <div className="flex items-center gap-1"><TrendingUp className="w-3 h-3 text-orange-300" /><h2 className="text-[13px] font-black uppercase tracking-wider truncate">菜单</h2></div>
+              <details className="menu-sort" onBlur={event => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) event.currentTarget.open = false;
+              }} onKeyDown={event => {
+                if (event.key === 'Escape') {
+                  event.currentTarget.open = false;
+                  event.currentTarget.querySelector('summary')?.focus();
+                }
+              }}>
+                <summary aria-label={`菜单排序：${recipeSortOptions.find(option => option.value === recipeSort)?.label}，从低到高`}>
+                  <ArrowDownWideNarrow aria-hidden="true" />排序
+                </summary>
+                <div className="menu-sort-options" role="group" aria-label="排序方式">
+                  <span className="menu-sort-hint">从低到高</span>
+                  {recipeSortOptions.map(option => <button key={option.value} type="button"
+                    aria-pressed={recipeSort === option.value} title={option.value === 'profit' ? '利润 = 售价 − 食材总成本' : undefined}
+                    onClick={event => {
+                      setRecipeSort(option.value);
+                      const dropdown = event.currentTarget.closest('details');
+                      if (dropdown) {
+                        dropdown.open = false;
+                        dropdown.querySelector('summary')?.focus();
+                      }
+                    }}>
+                    {option.label}<Check aria-hidden="true" />
+                  </button>)}
+                </div>
+              </details>
             </div>
             <div className="recipe-grid">
-              {[...RECIPES].sort((a, b) => a.salePrice - b.salePrice).map(recipe => (
+              {sortedRecipes.map(recipe => (
                 <RecipeCard key={recipe.id} recipe={recipe} inventory={state.inventory}
                   hasOrder={state.activeOrders.some(order => order.dishId === recipe.id)}
                   paused={state.isPaused} onCook={() => startCooking(recipe)} />
@@ -793,8 +828,8 @@ const App: React.FC = () => {
                         <div className="w-full flex flex-col items-center justify-center gap-1">
                           <div className="text-lg animate-pulse">🔧</div>
                           <div className="flex flex-col items-center gap-0.5">
-                            <span className="text-[8px] font-black text-orange-600">安装中...</span>
-                            <span className="text-[10px] font-black text-orange-500">{stove.installTimeLeft}s</span>
+                            <span className="stove-status font-black text-orange-600">安装中...</span>
+                            <span className="stove-status font-black text-orange-500">{stove.installTimeLeft}s</span>
                           </div>
                           <div className="w-full bg-stone-200 h-1 rounded-full overflow-hidden">
                             <div className="bg-gradient-to-r from-orange-400 to-red-500 h-full transition-all" style={{ width: `${((STOVE_INSTALL_TIME - stove.installTimeLeft) / STOVE_INSTALL_TIME) * 100}%` }} />
@@ -811,11 +846,11 @@ const App: React.FC = () => {
                               : 'opacity-50 cursor-not-allowed'
                           }`}
                         >
-                          <span className="text-[12px] font-bold text-stone-400 uppercase">安装灶台</span>
-                          <span className={`text-[12px] font-black ${state.money >= STOVE_INSTALL_COST ? 'text-green-600' : 'text-red-500'}`}>
+                          <span className="stove-label font-bold text-stone-400 uppercase">安装灶台</span>
+                          <span className={`stove-label font-black ${state.money >= STOVE_INSTALL_COST ? 'text-green-600' : 'text-red-500'}`}>
                             ${STOVE_INSTALL_COST}
                           </span>
-                          <span className="text-[12px] text-stone-400 font-medium">⏱{STOVE_INSTALL_TIME}秒</span>
+                          <span className="stove-status text-stone-400 font-medium">⏱{STOVE_INSTALL_TIME}秒</span>
                         </button>
                       )
                     ) : stove.isCooking ? (
@@ -824,13 +859,13 @@ const App: React.FC = () => {
                         {/* 第一排：菜品图标 */}
                         <div className="text-xl shrink-0">{activeRecipe?.icon}</div>
                         {/* 第二排：菜名 */}
-                        <span className="text-[11px] font-black text-stone-700">{activeRecipe?.name}</span>
+                        <span className="stove-label font-black text-stone-700">{activeRecipe?.name}</span>
                         {/* 第三排：进度条和倒计时 */}
                         <div className="w-full flex items-center gap-1 px-1">
                           <div className="flex-1 bg-stone-200 h-1.5 rounded-full overflow-hidden border border-white">
                             <div className="bg-gradient-to-r from-orange-400 to-red-600 h-full" style={{ width: `${stove.progress}%` }} />
                           </div>
-                          <span className="bg-orange-600 text-white px-1 rounded-sm font-black text-[9px] shadow-sm animate-pulse shrink-0">{stove.timeRemaining}s</span>
+                          <span className="stove-status bg-orange-600 text-white px-1 rounded-sm font-black shadow-sm animate-pulse shrink-0">{stove.timeRemaining}s</span>
                         </div>
                         {/* 第四排：关闭按钮 */}
                         <button onClick={() => cancelCooking(stove.id)} disabled={state.isPaused} className={`text-red-400 hover:text-red-600 transition-colors ${state.isPaused ? 'opacity-50 cursor-not-allowed' : ''}`}>
@@ -848,9 +883,9 @@ const App: React.FC = () => {
                           </div>
                         </div>
                         {/* 菜名 */}
-                        <span className="text-[11px] font-black text-green-700">{activeRecipe?.name}</span>
+                        <span className="stove-label font-black text-green-700">{activeRecipe?.name}</span>
                         {/* 已做好标签 */}
-                        <span className="text-[9px] font-black text-green-600 bg-green-100 px-1.5 rounded">已做好</span>
+                        <span className="stove-status font-black text-green-600 bg-green-100 px-1.5 rounded">已做好</span>
                         {/* 丢弃按钮 */}
                         <button onClick={() => discardDish(stove.id)} disabled={state.isPaused} className={`text-stone-400 hover:text-red-500 transition-colors ${state.isPaused ? 'opacity-50 cursor-not-allowed' : ''}`} title="丢弃菜品">
                           <Trash2 className="w-3.5 h-3.5" />
@@ -907,12 +942,13 @@ const App: React.FC = () => {
                            <span className={order.type === 'blogger' ? 'text-purple-500' : 'text-stone-300'}>{order.type === 'blogger' ? '博主' : '普通'}</span>
                         </div>
                       </div>
-                      {canServe ? (
-                        <button 
+                      {hasReadyDish ? (
+                        <button type="button" disabled={!canServe}
                           onClick={() => serveDish(order.id)}
-                          className="ml-1 px-2 py-0.5 bg-blue-500 hover:bg-blue-600 text-white text-[8px] font-black rounded shadow-sm active:scale-95 transition-transform animate-pulse"
+                          className="cook-button serve-button"
+                          title={state.isPaused ? '游戏已暂停' : '上菜并完成订单'}
                         >
-                          上菜
+                          <Utensils aria-hidden="true" /><span>上菜</span>
                         </button>
                       ) : (
                         <CookButton hasIngredients={canCook} hasOrder={true} disabled={!canStart}
@@ -1029,7 +1065,7 @@ const App: React.FC = () => {
                   <li>• <strong>取消烹饪：</strong>可以点击X按钮取消，但食材会损耗</li>
                   <li>• <strong>完成烹饪：</strong>如果有对应订单，自动完成并获得收入</li>
                   <li>• <strong>无订单：</strong>如果完成时没有对应订单，菜品浪费</li>
-                  <li>• <strong>价格排序：</strong>菜谱按售价从低到高排列</li>
+                  <li>• <strong>菜单排序：</strong>点击菜单右上角的排序按钮，可按制作时长、售价或利润从低到高排列；利润为售价减去食材总成本</li>
                 </ul>
               </section>
 
