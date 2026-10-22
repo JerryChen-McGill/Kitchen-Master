@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { CookButton, DeliveryClock, DishArtwork, RecipeCard, StockShelf } from './KitchenUI';
+import './kitchen.css';
 import { 
   ShoppingCart, Flame, Clock, DollarSign, Package, Play, 
   RotateCcw, AlertCircle, Heart, TrendingUp, TrendingDown, 
@@ -92,87 +94,6 @@ const App: React.FC = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [flashingIngredients, setFlashingIngredients] = useState<IngredientId[]>([]);
   const timerRef = useRef<number | null>(null);
-  
-  // 桌面端动态样式注入 - 处理Tailwind任意值类名和emoji图标
-  useEffect(() => {
-    if (window.innerWidth >= 1024) {
-      const style = document.createElement('style');
-      style.id = 'desktop-scale-styles';
-      style.textContent = `
-        /* 桌面端图标和文字放大 - 针对Tailwind任意值类名和所有emoji图标 */
-        @media (min-width: 1024px) {
-          /* 食材图标放大 - emoji (2.5倍) */
-          .desktop-scale .supply-row button > span:first-child { font-size: 2rem !important; line-height: 1 !important; }
-          .desktop-scale .supply-row .text-\\[10px\\] { font-size: 1.25rem !important; }
-          .desktop-scale .supply-row .text-\\[7px\\] { font-size: 1rem !important; }
-          .desktop-scale .supply-row .text-\\[9px\\] { font-size: 1.125rem !important; }
-          /* 确保价格文字不溢出 */
-          .desktop-scale .supply-row button { justify-content: space-between !important; }
-          .desktop-scale .supply-row button > span:last-child { white-space: nowrap !important; overflow: visible !important; }
-          
-          /* 菜谱图标放大 - emoji (2.5倍) */
-          .desktop-scale .recipe-grid button > div > div:first-child { font-size: 4.5rem !important; line-height: 1 !important; }
-          .desktop-scale .recipe-grid .text-\\[10px\\] { font-size: 1.25rem !important; }
-          .desktop-scale .recipe-grid .text-\\[8px\\] { font-size: 1rem !important; }
-          .desktop-scale .recipe-grid .text-\\[9px\\] { font-size: 1.125rem !important; }
-          
-          /* 订单图标放大 - emoji (2.5倍) */
-          .desktop-scale .col-span-3 .text-2xl { font-size: 3rem !important; line-height: 1 !important; }
-          .desktop-scale .col-span-3 .text-\\[9px\\] { font-size: 1.125rem !important; }
-          .desktop-scale .col-span-3 .text-\\[7px\\] { font-size: 1rem !important; }
-          .desktop-scale .col-span-3 .text-\\[8px\\] { font-size: 1rem !important; }
-          
-          /* 操作间图标放大 - emoji (2.5倍) */
-          .desktop-scale section[class*="h-[25%]"] .text-2xl { font-size: 3rem !important; line-height: 1 !important; }
-          .desktop-scale section[class*="h-[25%]"] .text-\\[8px\\] { font-size: 1rem !important; }
-          .desktop-scale section[class*="h-[25%]"] .text-\\[7px\\] { font-size: 0.875rem !important; }
-          
-          /* 所有小尺寸SVG图标统一放大 (2.5倍) */
-          .desktop-scale svg.w-2\\.5, .desktop-scale svg.h-2\\.5 { width: 1rem !important; height: 1rem !important; }
-          .desktop-scale svg.w-3, .desktop-scale svg.h-3 { width: 1.25rem !important; height: 1.25rem !important; }
-          .desktop-scale svg.w-3\\.5, .desktop-scale svg.h-3\\.5 { width: 1.5rem !important; height: 1.5rem !important; }
-          .desktop-scale svg.w-4, .desktop-scale svg.h-4 { width: 1.5rem !important; height: 1.5rem !important; }
-          
-          /* Header区域SVG图标 */
-          .desktop-scale header svg.w-4, .desktop-scale header svg.h-4 { width: 1.5rem !important; height: 1.5rem !important; }
-          
-          /* 进货区域SVG图标 */
-          .desktop-scale .supply-row svg.w-3, .desktop-scale .supply-row svg.h-3 { width: 1rem !important; height: 1rem !important; }
-          
-          /* 菜谱区域SVG图标 */
-          .desktop-scale .recipe-grid svg.w-3\\.5, .desktop-scale .recipe-grid svg.h-3\\.5 { width: 1.5rem !important; height: 1.5rem !important; }
-          
-          /* 操作间SVG图标 */
-          .desktop-scale section[class*="h-[25%]"] svg.w-2\\.5, .desktop-scale section[class*="h-[25%]"] svg.h-2\\.5 { width: 1rem !important; height: 1rem !important; }
-          .desktop-scale section[class*="h-[25%]"] svg.w-3, .desktop-scale section[class*="h-[25%]"] svg.h-3 { width: 1.25rem !important; height: 1.25rem !important; }
-          .desktop-scale section[class*="h-[25%]"] svg.w-3\\.5, .desktop-scale section[class*="h-[25%]"] svg.h-3\\.5 { width: 1.5rem !important; height: 1.5rem !important; }
-          
-          /* 订单区域SVG图标 */
-          .desktop-scale .col-span-3 svg.w-3, .desktop-scale .col-span-3 svg.h-3 { width: 1rem !important; height: 1rem !important; }
-          
-          /* 通知弹窗放大 */
-          .desktop-scale .fixed.px-6 { padding-left: 2rem !important; padding-right: 2rem !important; }
-          .desktop-scale .fixed.py-4 { padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
-          .desktop-scale .fixed .text-lg { font-size: 1.5rem !important; }
-          .desktop-scale .fixed .gap-2 { gap: 1rem !important; }
-          .desktop-scale .fixed .rounded-3xl { border-radius: 2rem !important; }
-          .desktop-scale .fixed .border-4 { border-width: 0.5rem !important; }
-          
-          /* 确保所有边框也按比例放大 */
-          .desktop-scale .border { border-width: 0.125rem !important; }
-          .desktop-scale .border-2 { border-width: 0.25rem !important; }
-        }
-      `;
-      // 移除旧的样式（如果存在）
-      const oldStyle = document.getElementById('desktop-scale-styles');
-      if (oldStyle) oldStyle.remove();
-      document.head.appendChild(style);
-      return () => {
-        const styleEl = document.getElementById('desktop-scale-styles');
-        if (styleEl) styleEl.remove();
-      };
-    }
-  }, []);
   
   const bgmRef = useRef<HTMLAudioElement | null>(null);
   const sfxBuy = useRef<HTMLAudioElement | null>(null);
@@ -779,219 +700,8 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className={`h-screen bg-stone-100 flex flex-col font-sans overflow-hidden select-none desktop-scale ${state.isPaused ? 'game-paused' : ''}`}>
-      <style>{`
-        @keyframes flash-red {
-          0%, 100% { border-color: #ef4444; background-color: #fee2e2; }
-          50% { border-color: #ef4444; background-color: white; }
-        }
-        .animate-flash-red { animation: flash-red 0.5s ease-in-out 3; z-index: 10; }
-        
-        /* 基础布局 - 手机横屏优先 */
-        .supply-row { height: 36px; }
-        .recipe-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
-        
-        /* 确保进货按钮和仓库容器高度一致 */
-        .supply-row button { min-width: fit-content; }
-        .supply-row .flex-1 { min-height: 100%; }
-        
-        /* 暂停时按钮变灰 - 但不包括控制按钮（规则、静音、暂停） */
-        .game-paused header button,
-        .game-paused button[title="游戏规则"],
-        .game-paused button:has(svg[class*="Volume"]) {
-          opacity: 1 !important;
-          pointer-events: auto !important;
-          cursor: pointer !important;
-        }
-        .game-paused button:not(header button):not([title="游戏规则"]):not(:has(svg[class*="Volume"])):not(:disabled) {
-          opacity: 0.5 !important;
-          cursor: not-allowed !important;
-          pointer-events: none !important;
-        }
+    <div className={`kitchen-game flex flex-col font-sans select-none ${state.isPaused ? 'game-paused' : ''}`}>
 
-        /* ===== 手机横屏适配 (320px - 640px) ===== */
-        @media (max-width: 640px) {
-          /* Header - 紧凑布局 */
-          header { padding: 4px 8px !important; }
-          header .gap-4 { gap: 6px !important; }
-          header .gap-2 { gap: 4px !important; }
-          header .px-2 { padding-left: 4px !important; padding-right: 4px !important; }
-          header .py-0\\.5 { padding-top: 2px !important; padding-bottom: 2px !important; }
-          header .px-4 { padding-left: 8px !important; padding-right: 8px !important; }
-          header .py-1 { padding-top: 4px !important; padding-bottom: 4px !important; }
-          header .p-1\\.5 { padding: 4px !important; }
-          header svg.w-4, header svg.h-4 { width: 14px !important; height: 14px !important; }
-          header .rounded-lg { border-radius: 6px !important; }
-          header .rounded-full { border-radius: 9999px !important; }
-          header .text-xl { font-size: 14px !important; }
-          header .text-lg { font-size: 12px !important; }
-          
-          /* 进货区域 - 紧凑 */
-          .supply-row { height: 32px !important; }
-          .supply-row .w-16 { width: 52px !important; }
-          .supply-row button { height: 24px !important; padding: 2px 4px !important; }
-          .supply-row button > span:first-child { font-size: 14px !important; }
-          .supply-row .text-\\[7px\\] { font-size: 9px !important; }
-          .supply-row h2 { font-size: 8px !important; }
-          .supply-row svg.w-3, .supply-row svg.h-3 { width: 10px !important; height: 10px !important; }
-          .supply-row .h-\\[29px\\] { height: 24px !important; min-height: 24px !important; }
-          .supply-row .min-h-\\[29px\\] { min-height: 24px !important; }
-          .supply-row .grid-cols-10 { min-height: 22px !important; height: 22px !important; }
-          .supply-row .grid .text-\\[10px\\] { font-size: 8px !important; }
-          .supply-row .p-0\\.5 { padding: 2px !important; }
-          .supply-row .px-2 { padding-left: 4px !important; padding-right: 4px !important; }
-          .supply-row .py-1 { padding-top: 2px !important; padding-bottom: 2px !important; }
-          .supply-row .gap-1 { gap: 2px !important; }
-          .supply-row .gap-0\\.5 { gap: 1px !important; }
-          
-          /* 菜谱区域 - 紧凑 */
-          .recipe-grid { gap: 2px !important; padding: 4px !important; }
-          .recipe-grid button { padding: 4px !important; border-radius: 8px !important; }
-          .recipe-grid button > div > div:first-child { font-size: 20px !important; }
-          .recipe-grid .text-\\[10px\\] { font-size: 8px !important; }
-          .recipe-grid .text-\\[8px\\] { font-size: 7px !important; }
-          .recipe-grid .text-\\[9px\\] { font-size: 8px !important; }
-          .recipe-grid svg { width: 12px !important; height: 12px !important; }
-          .recipe-grid .mb-1 { margin-bottom: 2px !important; }
-          .recipe-grid .gap-1 { gap: 2px !important; }
-          .recipe-grid .py-0\\.5 { padding-top: 2px !important; padding-bottom: 2px !important; }
-          .recipe-grid h2 { font-size: 8px !important; }
-          
-          /* 操作间 - 紧凑 */
-          section[class*="h-\\[25%\\]"] { padding: 4px 8px !important; }
-          section[class*="h-\\[25%\\]"] svg { width: 12px !important; height: 12px !important; }
-          section[class*="h-\\[25%\\]"] .px-2 { padding-left: 4px !important; padding-right: 4px !important; }
-          section[class*="h-\\[25%\\]"] .py-1 { padding-top: 2px !important; padding-bottom: 2px !important; }
-          section[class*="h-\\[25%\\]"] .gap-1\\.5 { gap: 4px !important; }
-          section[class*="h-\\[25%\\]"] .mb-1 { margin-bottom: 4px !important; }
-          section[class*="h-\\[25%\\]"] .gap-2 { gap: 6px !important; }
-          section[class*="h-\\[25%\\]"] .text-2xl { font-size: 20px !important; }
-          section[class*="h-\\[25%\\]"] .text-\\[8px\\] { font-size: 7px !important; }
-          section[class*="h-\\[25%\\]"] .text-\\[7px\\] { font-size: 6px !important; }
-          section[class*="h-\\[25%\\]"] .rounded-sm { border-radius: 4px !important; }
-          section[class*="h-\\[25%\\]"] .rounded-lg { border-radius: 6px !important; }
-          section[class*="h-\\[25%\\]"] .h-1\\.5 { height: 4px !important; }
-          
-          /* 订单区域 - 紧凑 */
-          .col-span-3:last-child section { padding: 4px !important; }
-          .col-span-3 svg { width: 12px !important; height: 12px !important; }
-          .col-span-3 .space-y-1 > div { padding: 6px !important; margin-bottom: 4px !important; }
-          .col-span-3 .px-2 { padding-left: 4px !important; padding-right: 4px !important; }
-          .col-span-3 .py-1 { padding-top: 2px !important; padding-bottom: 2px !important; }
-          .col-span-3 .text-2xl { font-size: 20px !important; }
-          .col-span-3 .text-\\[9px\\] { font-size: 8px !important; }
-          .col-span-3 .text-\\[7px\\] { font-size: 6px !important; }
-          .col-span-3 .text-\\[8px\\] { font-size: 7px !important; }
-          .col-span-3 .gap-1\\.5 { gap: 4px !important; }
-          .col-span-3 .gap-1 { gap: 2px !important; }
-          .col-span-3 .mb-1 { margin-bottom: 4px !important; }
-          .col-span-3 .rounded-lg { border-radius: 6px !important; }
-          .col-span-3 .rounded-xl { border-radius: 8px !important; }
-          .col-span-3 .px-1\\.5 { padding-left: 4px !important; padding-right: 4px !important; }
-          .col-span-3 .p-1 { padding: 4px !important; }
-          .col-span-3 .h-1 { height: 3px !important; }
-          
-          /* 全局 */
-          main { padding: 4px !important; gap: 4px !important; }
-          .text-xl { font-size: 14px !important; }
-          .text-lg { font-size: 12px !important; }
-          .text-2xl { font-size: 20px !important; }
-          .text-3xl { font-size: 28px !important; }
-        }
-
-        /* ===== 中等屏幕适配 (640px - 1024px) ===== */
-        @media (min-width: 641px) and (max-width: 1023px) {
-          /* 进货区域 */
-          .supply-row { height: 38px !important; }
-          .supply-row .w-16 { width: 56px !important; }
-          .supply-row button { height: 26px !important; padding: 3px 6px !important; }
-          .supply-row button > span:first-child { font-size: 16px !important; }
-          .supply-row .h-\\[29px\\] { height: 26px !important; min-height: 26px !important; }
-          .supply-row .min-h-\\[29px\\] { min-height: 26px !important; }
-          .supply-row .grid-cols-10 { min-height: 24px !important; height: 24px !important; }
-          
-          /* 菜谱区域 */
-          .recipe-grid button > div > div:first-child { font-size: 28px !important; }
-          
-          /* 操作间 */
-          section[class*="h-\\[25%\\]"] .text-2xl { font-size: 24px !important; }
-          
-          /* 订单区域 */
-          .col-span-3 .text-2xl { font-size: 24px !important; }
-        }
-
-        /* ===== 桌面端适配 (1024px以上) ===== */
-        @media (min-width: 1024px) {
-          /* 全局间距和内边距放大 */
-          .desktop-scale .p-1 { padding: 8px !important; }
-          .desktop-scale .gap-1 { gap: 8px !important; }
-          .desktop-scale main { padding: 8px !important; }
-          .desktop-scale main .gap-1 { gap: 8px !important; }
-          
-          /* Header 区域 */
-          .desktop-scale header { padding: 12px 24px !important; }
-          .desktop-scale header svg { width: 24px !important; height: 24px !important; }
-          .desktop-scale header .gap-4 { gap: 16px !important; }
-          .desktop-scale header .gap-2 { gap: 12px !important; }
-          .desktop-scale header .rounded-lg { border-radius: 12px !important; }
-          .desktop-scale header .rounded-full { border-radius: 9999px !important; }
-          
-          /* 进货区域 */
-          .desktop-scale .col-span-3 { padding: 0 !important; }
-          .desktop-scale .supply-row { height: 60px !important; }
-          .desktop-scale .supply-row button { height: 48px !important; padding: 8px 12px !important; }
-          .desktop-scale .supply-row .w-16 { width: 72px !important; }
-          .desktop-scale .supply-row button > span:first-child { font-size: 28px !important; line-height: 1 !important; }
-          .desktop-scale .supply-row .text-\\[10px\\] { font-size: 16px !important; }
-          .desktop-scale .supply-row .text-\\[7px\\] { font-size: 12px !important; }
-          .desktop-scale .supply-row .text-\\[9px\\] { font-size: 14px !important; }
-          .desktop-scale .supply-row h2 { font-size: 16px !important; }
-          .desktop-scale .supply-row svg { width: 16px !important; height: 16px !important; }
-          .desktop-scale .supply-row .h-\\[29px\\] { height: 48px !important; min-height: 48px !important; }
-          .desktop-scale .supply-row .min-h-\\[29px\\] { min-height: 48px !important; }
-          .desktop-scale .supply-row .grid-cols-10 { min-height: 44px !important; height: 44px !important; }
-          .desktop-scale .supply-row .grid .text-\\[10px\\] { font-size: 14px !important; }
-          
-          /* 菜谱区域 */
-          .desktop-scale .recipe-grid { gap: 8px !important; padding: 12px !important; }
-          .desktop-scale .recipe-grid button { padding: 12px !important; border-radius: 16px !important; }
-          .desktop-scale .recipe-grid button > div > div:first-child { font-size: 48px !important; line-height: 1 !important; }
-          .desktop-scale .recipe-grid .text-\\[10px\\] { font-size: 16px !important; }
-          .desktop-scale .recipe-grid .text-\\[8px\\] { font-size: 12px !important; }
-          .desktop-scale .recipe-grid .text-\\[9px\\] { font-size: 14px !important; }
-          .desktop-scale .recipe-grid svg { width: 20px !important; height: 20px !important; }
-          .desktop-scale .recipe-grid h2 { font-size: 16px !important; }
-          
-          /* 操作间 */
-          .desktop-scale section[class*="h-\\[25%\\]"] { padding: 8px !important; }
-          .desktop-scale section[class*="h-\\[25%\\]"] svg { width: 16px !important; height: 16px !important; }
-          .desktop-scale section[class*="h-\\[25%\\]"] .text-2xl { font-size: 36px !important; }
-          .desktop-scale section[class*="h-\\[25%\\]"] .text-\\[14px\\] { font-size: 20px !important; }
-          .desktop-scale section[class*="h-\\[25%\\]"] .text-\\[13px\\] { font-size: 16px !important; }
-          .desktop-scale section[class*="h-\\[25%\\]"] .text-\\[8px\\] { font-size: 12px !important; }
-          .desktop-scale section[class*="h-\\[25%\\]"] .text-\\[7px\\] { font-size: 10px !important; }
-          
-          /* 订单区域 */
-          .desktop-scale .col-span-3:last-child section { padding: 12px !important; }
-          .desktop-scale .col-span-3 svg { width: 16px !important; height: 16px !important; }
-          .desktop-scale .col-span-3 h2 { font-size: 16px !important; }
-          .desktop-scale .col-span-3 .text-2xl { font-size: 36px !important; }
-          .desktop-scale .col-span-3 .text-\\[9px\\] { font-size: 14px !important; }
-          .desktop-scale .col-span-3 .text-\\[7px\\] { font-size: 12px !important; }
-          .desktop-scale .col-span-3 .text-\\[8px\\] { font-size: 12px !important; }
-          
-          /* 文字和图标尺寸放大 */
-          .desktop-scale .text-xl { font-size: 28px !important; }
-          .desktop-scale .text-lg { font-size: 24px !important; }
-          .desktop-scale .text-2xl { font-size: 36px !important; }
-          .desktop-scale .text-3xl { font-size: 56px !important; }
-          
-          /* 圆角放大 */
-          .desktop-scale .rounded-xl { border-radius: 20px !important; }
-          .desktop-scale .rounded-lg { border-radius: 12px !important; }
-          .desktop-scale .rounded-md { border-radius: 8px !important; }
-        }
-      `}</style>
       
       <header className="bg-white border-b-2 border-stone-200 px-4 py-1 flex items-center justify-between shrink-0 shadow-sm z-50">
         <div className="flex items-center gap-4">
@@ -1019,85 +729,51 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 p-1 grid grid-cols-12 gap-1 overflow-hidden">
-        {/* Supply Chain Section (Left) - Non-scrollable optimization */}
-        <section className="col-span-3 bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden flex flex-col">
-          <div className="bg-stone-700 px-2 py-1 flex items-center justify-between text-white shrink-0">
-            <div className="flex items-center gap-1"><ShoppingCart className="w-3 h-3 text-blue-300" /><h2 className="text-[13px] font-black uppercase tracking-wider truncate">进货</h2></div>
-            <div className="flex items-center gap-1"><Package className="w-3 h-3 text-orange-300" /><h2 className="text-[13px] font-black uppercase tracking-wider truncate">仓库</h2></div>
+      <main className="kitchen-layout">
+        <section className="supply-section" aria-label="进货与仓库">
+          <div className="supply-headings">
+            <h2><ShoppingCart />进货</h2><h2><Package />仓库</h2>
           </div>
-          <div className="flex-1 p-0.5 space-y-px bg-stone-50/30 overflow-hidden">
+          <div className="supply-shelves">
             {(Object.keys(INGREDIENTS) as IngredientId[]).sort((a, b) => INGREDIENTS[a].price - INGREDIENTS[b].price).map(id => {
               const ing = INGREDIENTS[id];
-              const pendingItems = state.pendingDeliveries.filter(d => d.ingredientId === id);
-              const currentTotal = state.inventory[id] + pendingItems.length;
-              const isFull = currentTotal >= 10;
-              const isLowMoney = state.money < ing.price;
-              return (
-                <div key={id} className="supply-row flex gap-1">
-                  <div className="w-16 flex flex-col gap-0.5">
-                    <button onClick={() => buyIngredient(id)} disabled={isLowMoney || isFull || state.isPaused} className={`relative w-full h-[29px] flex items-center justify-between px-1.5 rounded-md border transition-all bg-white shadow-sm ${!isFull && !isLowMoney && !state.isPaused ? 'border-stone-100 hover:border-blue-400' : 'border-stone-100 opacity-60 cursor-not-allowed'}`}>
-                      <span className="text-lg leading-none shrink-0">{ing.icon}</span>
-                      <div className="flex flex-col items-end justify-between h-full py-0.5">
-                        <span className={`font-black text-[7px] shrink-0 leading-none ${isLowMoney ? 'text-stone-300' : 'text-blue-600'}`}>${ing.price}</span>
-                        <span className="text-[7px] text-stone-400 leading-none">{ing.deliveryTime}s</span>
-                      </div>
-                    </button>
-                    <div className="h-0.5 flex gap-0.5 px-0.5">{pendingItems.map(d => (<div key={d.id} className="flex-1 h-full bg-stone-200 rounded-full overflow-hidden relative"><div className="absolute left-0 top-0 h-full bg-blue-500 transition-all duration-1000 ease-linear" style={{ width: `${((ing.deliveryTime - d.timeLeft) / ing.deliveryTime) * 100}%` }} /></div>))}</div>
-                  </div>
-                  <div className={`flex-1 p-0.5 rounded-lg bg-white border transition-all shadow-sm flex items-center h-[29px] min-h-[29px] mt-0 cursor-pointer ${flashingIngredients.includes(id) ? 'animate-flash-red border-red-500' : 'border-stone-100 hover:border-orange-300'}`} onClick={() => sellIngredient(id)} title="点击卖出（半价）">
-                    <div className="flex-1 grid grid-cols-10 gap-0.5 p-0.5 bg-stone-50/50 rounded-md h-full min-h-full">
-                      {Array.from({ length: 10 }).map((_, i) => (<div key={i} className={`flex items-center justify-center rounded-sm border aspect-square ${i < state.inventory[id] ? 'bg-white border-stone-50' : 'border-dashed border-stone-100/10'}`}>{i < state.inventory[id] && <span className="text-[10px] leading-none">{ing.icon}</span>}</div>))}
-                    </div>
-                  </div>
-                </div>
-              );
+              const pending = state.pendingDeliveries.filter(d => d.ingredientId === id);
+              const isFull = state.inventory[id] + pending.length >= 10;
+              const cannotBuy = state.money < ing.price || isFull || state.isPaused;
+              return <div key={id} className="supply-line">
+                <button className="supply-buy" type="button" onClick={() => buyIngredient(id)} disabled={cannotBuy}
+                  aria-label={`购买${ing.name}，${ing.price}金币`}
+                  title={isFull ? '库存已满（含配送中）' : `${ing.name} · 配送 ${ing.deliveryTime} 秒`}>
+                  <span className="supply-icon" aria-hidden="true">{ing.icon}</span>
+                  <span className="supply-label"><strong>{ing.name}</strong><b>${ing.price}</b></span>
+                  <DeliveryClock deliveries={pending} duration={ing.deliveryTime} />
+                </button>
+                <StockShelf ingredient={ing} count={state.inventory[id]} disabled={state.isPaused}
+                  flashing={flashingIngredients.includes(id)} onSell={() => sellIngredient(id)} />
+              </div>;
             })}
           </div>
+          <div className="fridge-foot" aria-hidden="true"><span /><span /><span /></div>
         </section>
 
         {/* Menu & Kitchen Section (Center) */}
-        <div className="col-span-6 flex flex-col gap-1 overflow-hidden">
+        <div className="menu-kitchen">
           {/* Menu Section */}
-          <section className="h-[72%] bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden flex flex-col">
+          <section className="menu-board">
             <div className="bg-stone-700 px-2 py-1 flex items-center justify-between text-white shrink-0">
               <div className="flex items-center gap-1"><TrendingUp className="w-3 h-3 text-orange-300" /><h2 className="text-[13px] font-black uppercase tracking-wider truncate">菜单</h2></div>
             </div>
-            <div className="p-1 recipe-grid overflow-y-auto flex-1 bg-stone-100/10">
-              {[...RECIPES].sort((a, b) => a.salePrice - b.salePrice).map(recipe => {
-                const canCook = Object.entries(recipe.ingredients).every(([ingId, count]) => state.inventory[ingId as IngredientId] >= (count || 0));
-                return (
-                  <button 
-                    key={recipe.id} 
-                    onClick={() => startCooking(recipe)} 
-                    disabled={state.isPaused}
-                    className={`flex flex-col p-1.5 rounded-xl border-2 transition-all relative active:scale-95 bg-white shadow-sm overflow-hidden group ${canCook && !state.isPaused ? 'border-orange-50 hover:border-orange-400' : 'border-transparent opacity-60 grayscale-[40%]'} ${state.isPaused ? 'cursor-not-allowed' : ''}`}
-                  >
-                    <div className="flex flex-col items-center mb-1 text-center">
-                      <div className="text-3xl mb-0.5 group-hover:scale-110 transition-transform drop-shadow-sm">{recipe.icon}</div>
-                      <div className="font-black text-stone-800 text-[10px] uppercase truncate leading-none w-full">{recipe.name}</div>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-1 w-full">
-                       <div className="flex gap-0.5 justify-center flex-wrap">
-                          {Object.entries(recipe.ingredients).map(([id, count]) => (
-                            <div key={id} className={`flex items-center text-[8px] font-bold ${state.inventory[id as IngredientId] < (count || 0) ? 'text-red-400' : 'text-stone-400'}`}>
-                              {INGREDIENTS[id as IngredientId].icon}{count}
-                            </div>
-                          ))}
-                       </div>
-                       <div className={`mt-auto text-[9px] font-black text-center py-0.5 rounded shadow-inner flex flex-row items-center justify-center gap-1 ${canCook ? 'bg-green-500 text-white' : 'bg-stone-200 text-stone-400'}`}>
-                          <span>${recipe.salePrice}</span>
-                          <span className="text-[9px] opacity-80">⏱{recipe.cookingTime}s</span>
-                        </div>
-                    </div>
-                  </button>
-                );
-              })}
+            <div className="recipe-grid">
+              {[...RECIPES].sort((a, b) => a.salePrice - b.salePrice).map(recipe => (
+                <RecipeCard key={recipe.id} recipe={recipe} inventory={state.inventory}
+                  hasOrder={state.activeOrders.some(order => order.dishId === recipe.id)}
+                  paused={state.isPaused} onCook={() => startCooking(recipe)} />
+              ))}
             </div>
           </section>
 
           {/* Cooking Section */}
-          <section className="h-[28%] bg-white rounded-xl shadow-sm border border-stone-200 flex flex-col overflow-hidden p-1">
+          <section className="stove-section flex flex-col p-1">
             <div className="flex-1 flex gap-1">
               {state.stoves.map(stove => {
                 const activeRecipe = RECIPES.find(r => r.id === stove.dishId);
@@ -1192,12 +868,12 @@ const App: React.FC = () => {
         </div>
 
         {/* Orders Section (Right) */}
-        <section className="col-span-3 bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden flex flex-col">
+        <section className="orders-section flex flex-col">
           <div className="bg-stone-700 px-2 py-1 flex items-center justify-between text-white shrink-0">
             <div className="flex items-center gap-1"><AlertCircle className="w-3 h-3 text-red-300" /><h2 className="text-[13px] font-black uppercase tracking-wider truncate">订单</h2></div>
             <span className="bg-white/20 text-[8px] px-1.5 rounded-full font-black">{state.activeOrders.length}</span>
           </div>
-            <div className="p-1 space-y-1 flex-1 overflow-y-auto bg-stone-100/10">
+            <div className="order-list">
               {state.activeOrders.map(order => {
                 const recipe = RECIPES.find(r => r.id === order.dishId)!;
                 // 最后20秒是催单区间
@@ -1216,9 +892,9 @@ const App: React.FC = () => {
                 const hasReadyDish = state.stoves.some(s => s.isDone && s.dishId === order.dishId);
                 const canServe = hasReadyDish && !state.isPaused;
                 return (
-                  <div key={order.id} className={`flex flex-col p-1.5 rounded-lg border transition-all shadow-sm bg-white ${isUrgent ? 'border-red-600 bg-red-50 animate-pulse' : isNew ? 'border-blue-200 bg-blue-50/50' : 'border-stone-50'}`}>
+                  <div key={order.id} className={`order-ticket flex flex-col p-1.5 rounded-lg border transition-all shadow-sm ${isUrgent ? 'border-red-600 bg-red-50 animate-pulse' : isNew ? 'border-blue-200 bg-blue-50/50' : 'border-stone-50'}`}>
                     <div className="flex items-center gap-1 mb-1">
-                      <div className="text-2xl shrink-0">{recipe.icon}</div>
+                      <div className="text-2xl shrink-0"><DishArtwork icon={recipe.icon} /></div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1 mb-0.5">
                           <span className="font-black text-stone-800 text-[9px] leading-tight truncate">{recipe.name}</span>
@@ -1238,13 +914,10 @@ const App: React.FC = () => {
                         >
                           上菜
                         </button>
-                      ) : canStart && (
-                        <button 
-                          onClick={() => acceptOrder(order)}
-                          className="ml-1 px-2 py-0.5 bg-green-500 hover:bg-green-600 text-white text-[8px] font-black rounded shadow-sm active:scale-95 transition-transform"
-                        >
-                          好嘞
-                        </button>
+                      ) : (
+                        <CookButton hasIngredients={canCook} hasOrder={true} disabled={!canStart}
+                          onClick={() => acceptOrder(order)} label={isCooking ? '制作中' : '烹饪'}
+                          title={state.isPaused ? '游戏已暂停' : isCooking ? '正在制作' : !canCook ? '食材不足' : !hasFreeStove ? '没有可用的灶台' : '接受订单并烹饪'} />
                       )}
                     </div>
                     <div className="w-full bg-stone-100 h-1 rounded-full overflow-hidden"><div className={`h-full transition-all duration-1000 ease-linear ${isUrgent ? 'bg-red-600 animate-pulse' : isNew ? 'bg-blue-400' : 'bg-orange-400'}`} style={{ width: `${progressWidth}%` }} /></div>
@@ -1331,7 +1004,7 @@ const App: React.FC = () => {
                   <li>• <strong>配送时间：</strong>购买后需要等待配送时间（秒）才能到货</li>
                   <li>• <strong>库存上限：</strong>每种食材最多存储10个（包括配送中的）</li>
                   <li>• <strong>价格排序：</strong>食材按价格从低到高排列</li>
-                  <li>• <strong>配送进度：</strong>蓝色进度条显示配送进度</li>
+                  <li>• <strong>配送进度：</strong>圆形时钟显示最近一件配送进度，角标显示待到货数量</li>
                 </ul>
               </section>
 
@@ -1349,7 +1022,7 @@ const App: React.FC = () => {
               <section>
                 <h3 className="text-xl font-black text-orange-600 mb-3 uppercase">做菜规则</h3>
                 <ul className="space-y-2 text-base">
-                  <li>• <strong>点击菜谱卡片：</strong>开始烹饪对应菜品</li>
+                  <li>• <strong>点击菜谱卡片：</strong>翻面查看食材和时间；点击烹饪按钮开始制作</li>
                   <li>• <strong>食材需求：</strong>必须拥有足够的食材才能开始烹饪</li>
                   <li>• <strong>烹饪时间：</strong>不同菜品需要不同的烹饪时间（秒）</li>
                   <li>• <strong>灶台数量：</strong>同时最多在已安装的灶台上烹饪</li>
